@@ -1,0 +1,55 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* your global overrides (if any) */
+::-webkit-scrollbar {
+    height: 12px;
+    width: 2px;
+    background: var(--bg-theme);
+}
+::-webkit-scrollbar-thumb {
+    background: orangered;
+    -webkit-border-radius: 1ex;
+}
+
+::-webkit-scrollbar-corner {
+    background: #444;
+}
+svg, .text-\[\#8c00cc\] {color: orangered; size: 2rem;}
+textarea {
+    resize: none;
+}
+.w-fit {
+    width: 100%;
+}
+.br-2, input[type=text] {border-radius: 2em;}
+.gap-1 {gap: 1em;}
+.pointer:hover {cursor: pointer;}
+.anchor-center {place-items: anchor-center;}
+.flex-wrap {flex-wrap: wrap;}
+.custom-rounded {border-radius: 2rem;}
+.custom-px-4 {padding-right: 2rem; padding-left: 2rem;}
+.custom-p-8 {padding: 2rem 20rem;}
+button {
+    border-radius: 2rem;
+    padding: 10px;
+}
+button:hover {
+    opacity: 0.8;
+}
+.gap-2 {gap: 2rem;}
+.center-items {place-items: center;}
+.hover-cursor:hover {cursor: pointer;}
+.scale-1:hover {transform: scale(1.1); transition: all ease 0.5s;}
+@media screen and (max-width: 37.5rem) {
+    .custom-p-8 {padding: 2rem 1rem;}
+    #root .main-content {
+        flex-direction: column;
+    }
+    main div:first-child {
+        justify-content: flex-start;
+        margin: 1rem;
+    }
+    .mob-menu {padding: 1rem 2rem;}
+}
