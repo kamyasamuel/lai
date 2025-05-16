@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { connectDrive } from './driveService'
-import { FileBox, Link as LinkIcon } from 'lucide-react'
+import { FileBox, Link as LinkIcon, Download, Eye } from 'lucide-react'
 
 const PROVIDERS = [
   { name: 'Google Drive', icon: FileBox },
@@ -19,6 +19,7 @@ export default function MyDriveInterface() {
   const [status, setStatus] = useState('')
   // name of the provider currently loading (or empty string)
   const [loading, setLoading] = useState('')
+  const [legalAiAfricaFiles, setLegalAiAfricaFiles] = useState([]);
 
   const handleConnect = async (providerName) => {
     setStatus('')
@@ -26,8 +27,19 @@ export default function MyDriveInterface() {
 
     try {
       const msg = await connectDrive(providerName)
-      setStatus(msg)
+      if (providerName === 'Legal AI Africa') {
+        const response = await fetch('http://localhost:8888/mydrive/legal-ai-africa/docs');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const files = await response.json();
+        setLegalAiAfricaFiles(files);
+        setStatus('Files loaded successfully.');
+      } else {
+        setStatus(msg)
+      }
     } catch (err) {
+ setLegalAiAfricaFiles([]);
       setStatus(`Error connecting to ${providerName}: ${err.message}`)
     } finally {
       setLoading('')
@@ -35,7 +47,9 @@ export default function MyDriveInterface() {
   }
 
   return (
+    // Main container with padding and centering
     <div className="flex flex-col items-center p-6 text-white">
+      {/* Title and description */}
       <h2 className="text-xl font-semibold mb-2">My Drive</h2>
       <p className="text-gray-400 text-sm mb-4">
         Access and sync cloud‑based storage from multiple providers.
@@ -61,10 +75,10 @@ export default function MyDriveInterface() {
             onClick={() => handleConnect(name)}
             disabled={loading && loading !== name}
             className={`
-              flex items-center gap-2 px-4 py-2 rounded text-white
+              flex items-center gap-2 px-4 py-2 rounded text-white custom-button
               ${loading === name
                 ? 'bg-[#444] cursor-wait'
-                : 'bg-[#8c00cc] hover:bg-[#9c38d0]'}
+                : 'bg-[#8c00cc] hover:bg-[#333]'}
             `}
           >
             <Icon size={16} />
@@ -72,6 +86,38 @@ export default function MyDriveInterface() {
           </button>
         ))}
       </div>
+
+      {/* Display Legal AI Africa files */}
+      {legalAiAfricaFiles.length > 0 && (
+        <div className="w-full max-w-2xl mt-6">
+          <h3 className="text-lg font-semibold mb-3 border-b border-[#333] pb-2">
+            Legal AI Africa Files
+          </h3>
+          <ul className="space-y-3">
+            {legalAiAfricaFiles.map((filename, index) => (
+              <li
+                key={index}
+                className="flex items-center justify-between bg-[#222] border border-[#333] p-3 rounded"
+              >
+                <span>{filename}</span>
+                <div className="flex gap-2">
+                  <a
+                    href={`http://localhost:8888/uploads/${filename}`}
+                    download
+                    className="flex items-center text-sm text-gray-400 hover:text-white"
+                  >
+                    <Download size={16} className="mr-1" /> Download
+                  </a>
+                  {/* The "Open" action can be implemented later */}
+                  <button className="flex items-center text-sm text-gray-400 hover:text-white">
+                    <Eye size={16} className="mr-1" /> Open
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
 
       {/* Status message */}
       {status && (

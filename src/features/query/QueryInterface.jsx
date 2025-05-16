@@ -3,15 +3,27 @@ import { queryAPI } from './QueryService';
 import LoadingIndicator from '../../components/LoadingIndicator';
 import { Search } from 'lucide-react';
 
-const useCases = {
+const useCasesByTitle = {
+ 'Contract Search': [
+ 'Find clauses related to termination in a supply agreement.',
+ 'Search for force majeure provisions in construction contracts.',
+ 'Locate indemnity clauses in a software license agreement.'
+ ],
+ 'Web & News': [
+ 'Search recent legal news in Uganda.',
+ 'Find articles on new data privacy laws in South Africa.',
+ 'Look for news on major court cases in Kenya.'
+ ],
   'Laws & Regulations': [
-    'Search the Nigerian Data Protection Act 2023.',
+    'Search the Ugandan Data Protection Act 2023.',
     'Get all regulations on land use from Ghana.',
     'List recent updates on consumer protection in Kenya.'
   ],
+
+
   'Case Law': [
-    'Find precedent cases on wrongful dismissal in South Africa.',
-    'Locate Nigerian Supreme Court judgments on contract breach.',
+    'Find precedent cases on wrongful dismissal in Uganda.',
+    'Locate Ugandan Supreme Court judgments on contract breach.',
     'Explore Ugandan rulings on freedom of expression.'
   ]
 };
@@ -25,13 +37,24 @@ export default function QueryInterface({ title }) {
     if (!query.trim()) return;
     setLoading(true);
     try {
-      const { results: res } = await queryAPI(title, query);
-      setResults(res || []);
-    } catch (e) {
-      setResults([{ title:'Error', snippet: e.message }]);
-    } finally {
-      setLoading(false);
-    }
+      let type;
+      switch (title) {
+        case 'Contract Search': type = 'contract'; break;
+        case 'Web & News': type = 'web'; break;
+        case 'Laws & Regulations': type = 'laws'; break;
+        case 'Case Law': type = 'case_law'; break;
+        default:
+                setResults([{ title:'Error', snippet: `Unknown query type: ${title}` }]);
+                setLoading(false);
+      return;
+        }
+        const { results: res } = await queryAPI(type, query);
+        setResults(res || []);
+      } catch (e) {
+        setResults([{ title:'Error', snippet: e.message }]);
+      } finally {
+        setLoading(false);
+      }
   };
 
   return (
@@ -41,11 +64,11 @@ export default function QueryInterface({ title }) {
         Use AI to explore {title.toLowerCase()} across jurisdictions.
       </p>
       <div className="flex gap-2 flex-wrap justify-center mb-6">
-        {useCases[title]?.map((ex,i)=>(
+        {useCasesByTitle[title]?.map((ex,i)=>(
           <button
             key={i}
             onClick={()=>setQuery(ex)}
-            className="bg-[#2c2c2c] hover:bg-[#3a3a3a] text-sm px-3 py-1 rounded-full"
+            className="custom-button hover:bg-[#3a3a3a] text-sm px-3 py-1 rounded-full"
           >
             {ex}
           </button>

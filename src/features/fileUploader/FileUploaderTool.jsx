@@ -29,7 +29,7 @@ export default function FileUploaderTool({ title }) {
       </p>
       <FileInput onChange={e=>setFile(e.target.files[0])}/>
       <button onClick={handleUpload}
-              className="bg-[#8c00cc] px-4 py-2 rounded text-white mt-4">
+              className="custom-button px-4 py-2 rounded text-white mt-4">
         {loading?'Analyzing...':'Analyze'}
       </button>
       {result && (

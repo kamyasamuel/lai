@@ -114,7 +114,7 @@ export default function FileAnalysisInterface() {
             <h3 className="text-lg font-bold mb-2">AI Analysis</h3>
             <div id='analysis' dangerouslySetInnerHTML={{ __html: output }}></div>
             <button onClick={handleDownload}
-              className="absolute top-4 right-4 flex items-center gap-1 text-sm bg-[#8c00cc]
+              className="absolute top-4 right-4 flex items-center gap-1 text-sm custom-button
                          px-3 py-1 rounded hover:bg-[#a02cd0]">
               Download
             </button>
@@ -131,7 +131,7 @@ export default function FileAnalysisInterface() {
         <FileInput onChange={e => setFile(e.target.files[0])} />
         <button onClick={handleSubmit}
                 disabled={!file || loading}
-                className="mt-2 bg-[#8c00cc] px-4 py-2 rounded w-full disabled:opacity-50">
+                className="mt-2 custom-button px-4 py-2 rounded w-full disabled:opacity-50">
           {loading ? 'Analyzing...' : 'Submit for Analysis'}
         </button>
       </div>

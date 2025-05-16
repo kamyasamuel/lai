@@ -47,7 +47,7 @@ export default function ChatInterface() {
     const aiMsg = { text: '', sender: 'ai', timestamp: Date.now() };
 
     ws.onopen = () => {
-      ws.send(JSON.stringify({ message: text }));
+      ws.send(JSON.stringify({ message: { parts: [{ text: text }] } }));
     };
 
     ws.onmessage = (evt) => {
@@ -124,7 +124,7 @@ export default function ChatInterface() {
         {loading && <LoadingIndicator text="🤖 AI is typing..." />}
         <div ref={endRef} />
       </div>
-      <form onSubmit={handleSubmit} className="flex w-full max-w-3xl mt-4 gap-1 anchor-center">
+      <form onSubmit={handleSubmit} className="flex w-full max-w-3xl mt-4 gap-1 center-items">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
