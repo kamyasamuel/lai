@@ -28,7 +28,7 @@ export default function MyDriveInterface() {
     try {
       const msg = await connectDrive(providerName)
       if (providerName === 'Legal AI Africa') {
-        const response = await fetch('http://localhost:8888/mydrive/legal-ai-africa/docs');
+        const response = await fetch('https://lawyers.legalaiafrica.com/mydrive/legal-ai-africa/docs');
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -78,7 +78,7 @@ export default function MyDriveInterface() {
               flex items-center gap-2 px-4 py-2 rounded text-white custom-button
               ${loading === name
                 ? 'bg-[#444] cursor-wait'
-                : 'bg-[#8c00cc] hover:bg-[#333]'}
+                : 'bg-[#111] hover:bg-[#222]'}
             `}
           >
             <Icon size={16} />
@@ -102,8 +102,8 @@ export default function MyDriveInterface() {
                 <span>{filename}</span>
                 <div className="flex gap-2">
                   <a
-                    href={`http://localhost:8888/uploads/${filename}`}
-                    download
+                    href={`https://lawyers.legalaiafrica.com/uploads/${filename}`}
+
                     className="flex items-center text-sm text-gray-400 hover:text-white"
                   >
                     <Download size={16} className="mr-1" /> Download

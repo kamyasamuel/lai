@@ -54,7 +54,7 @@ export default function DocumentComparisonInterface() {
       <div className={`w-full max-w-3xl mt-4 space-y-4 transition-all ${submitted ? 'mt-auto' : ''}`}>
         <div>
           <label className="block text-sm font-medium text-gray-300">First Document:</label>
-          <FileInput className="bg-[#-444]" onChange={e => setFile1(e.target.files[0])} />
+          <FileInput onChange={e => setFile1(e.target.files[0])} />
         </div>
         <div>
            <label className="block text-sm font-medium text-gray-300">Second Document:</label>

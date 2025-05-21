@@ -42,7 +42,7 @@ export default function FileAnalysisInterface() {
         {output && (
           <div className="bg-[#2a2a2a] p-4 rounded shadow relative">
             <h3 className="text-lg font-bold mb-2">AI Analysis</h3>
-            <div id='analysis'>{output}</div>
+            <div id='analysis' dangerouslySetInnerHTML={{ __html: output }}></div>
             <button onClick={handleDownload}
               className="absolute top-4 right-4 flex items-center gap-1 text-sm bg-[#8c00cc]
                          px-3 py-1 rounded hover:bg-[#a02cd0]">

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { analyzeContractAPI } from './contractAnalysisService'; // Assuming a new service
-import FileInput from '../../components/FileInput';
+import { analyzeContractAPI } from './contractAnalysisService';
+import FileInput from '../../components/FileInput'; 
 import LoadingIndicator from '../../components/LoadingIndicator'; // Assuming a loading indicator component
 
 export default function ContractAnalysisInterface() {

@@ -82,7 +82,7 @@ async def generate_draft(prompt: str) -> str:
 class BaseCORSHandler(tornado.web.RequestHandler):
     def set_default_headers(self):
         # Allow React dev server on port 5173
-        self.set_header("Access-Control-Allow-Origin", "http://localhost:5173")
+        self.set_header("Access-Control-Allow-Origin", "https://legalaiafrica.com")
         self.set_header("Access-Control-Allow-Credentials", "true")
         self.set_header("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
         self.set_header(

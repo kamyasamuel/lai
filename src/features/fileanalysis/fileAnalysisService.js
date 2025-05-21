@@ -1,5 +1,5 @@
 export async function analyzeFileAPI(formData) {
-  const res = await fetch('http://localhost:8888/analyze', {
+  const res = await fetch('https://lawyers.legalaiafrica.com/analyze', {
     method: 'POST',
     body: formData
   });

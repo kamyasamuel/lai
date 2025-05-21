@@ -72,7 +72,7 @@ export default function DraftingInterface() {
 import React, { useState } from 'react'
 import { draftAPI } from './draftingService'
 import LoadingIndicator from '../../components/LoadingIndicator'
-
+// src/features/drafting/DraftingInterface.jsx
 export default function DraftingInterface() {
   const [input, setInput] = useState('')
   const [generated, setGenerated] = useState('')
