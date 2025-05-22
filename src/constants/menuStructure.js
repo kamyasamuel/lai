@@ -9,10 +9,7 @@ import {
       { name: 'File Analysis', icon: FileSearch },
       { name: 'Chat', icon: MessageSquare },
     ],
-    'Combine Research': [
-      { name: 'Laws & Regulations', icon: Layers },
-      { name: 'Case Law', icon: Gavel },
-    ],
+    'Library': [{ name: 'Document Library', icon: Layers },],
     Tools: [
       { name: 'File Summariser', icon: FileText },
       { name: 'Contract Analysis', icon: Briefcase },

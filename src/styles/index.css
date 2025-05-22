@@ -40,9 +40,7 @@ button {
     padding: 10px;
     cursor: pointer;
 }
-button:hover {
-
-}
+.flex {display: flex;}
 .custom-button {
     border-radius: 2rem;
     border: solid 1px orangered;
