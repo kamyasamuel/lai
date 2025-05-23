@@ -72,7 +72,7 @@ export default function DraftingInterface() {
 import React, { useState } from 'react'
 import { draftAPI } from './draftingService'
 import LoadingIndicator from '../../components/LoadingIndicator'
-
+// src/features/drafting/DraftingInterface.jsx
 export default function DraftingInterface() {
   const [input, setInput] = useState('')
   const [generated, setGenerated] = useState('')
@@ -111,7 +111,7 @@ export default function DraftingInterface() {
           />
           <button
             onClick={handleGenerate}
-            className="bg-[#8c00cc] px-6 py-2 rounded text-white"
+            className="custom-button px-6 py-2 rounded text-white"
           >
             Generate
           </button>
@@ -140,7 +140,7 @@ export default function DraftingInterface() {
             <button
               onClick={handleGenerate}
               disabled={loading}
-              className="bg-[#8c00cc] px-4 rounded disabled:opacity-50"
+              className="custom-button px-4 rounded disabled:opacity-50"
             >
               {loading ? 'Generating…' : 'Regenerate'}
             </button>
@@ -153,7 +153,7 @@ export default function DraftingInterface() {
                 a.click()
                 URL.revokeObjectURL(a.href)
               }}
-              className="bg-green-600 px-4 py-2 rounded flex items-center gap-2"
+              className="custom-button px-4 py-2 rounded flex items-center gap-2"
             >
               Download
             </button>

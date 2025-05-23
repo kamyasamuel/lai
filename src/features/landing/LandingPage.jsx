@@ -16,7 +16,7 @@ export default function LandingPage({ onSelect }) {
             <button
               key={name}
               onClick={() => onSelect(name)}
-              className="bg-[#1a1a1a] border border-[#333] rounded p-4 flex flex-col items-center
+              className="border border-[#333] rounded p-4 flex flex-col items-center
                          text-center shadow-md hover:bg-[#2a2a2a]"
             >
               <Icon size={32} className="mb-2 text-[#8c00cc]" />
