@@ -41,13 +41,13 @@ export default function ChatInterface() {
     setLoading(true);
 
     // open a new WS for this message
-    const ws = new WebSocket('wss://localhost:9090/chat/ws/chat');
+    const ws = new WebSocket('wss://lawyers.legalaiafrica.com/ws-chat');
 
     // accumulate the AI response in this object
     const aiMsg = { text: '', sender: 'ai', timestamp: Date.now() };
 
     ws.onopen = () => {
-      ws.send(JSON.stringify({ message: { parts: [{ text: text }] } }));
+      ws.send(JSON.stringify({ user_message: text }));
     };
 
     ws.onmessage = (evt) => {

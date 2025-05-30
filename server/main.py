@@ -71,7 +71,7 @@ async def generate_draft(prompt: str) -> str:
 class BaseCORSHandler(tornado.web.RequestHandler):
     def set_default_headers(self):
         # Allow React dev server on port 5173
-        self.set_header("Access-Control-Allow-Origin", "http://localhost:5173")
+        self.set_header("Access-Control-Allow-Origin", "http://legalaiafrica.com")
         self.set_header("Access-Control-Allow-Credentials", "true")
         self.set_header("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
         self.set_header(
@@ -148,7 +148,7 @@ class AnalysisHandler(BaseCORSHandler):
                 temperature=0.5,
                 top_p=1
             )
-        self.write(json.dumps({'summary': analysis.choices[0].message.content, 'filename':filename}))
+        self.write(json.dumps({'summary': analysis.choices[0].message.content, 'filename':filename})) # type: ignore
 
 class ChatWebSocketHandler(tornado.websocket.WebSocketHandler):
     def check_origin(self, origin):
@@ -166,7 +166,7 @@ class ChatWebSocketHandler(tornado.websocket.WebSocketHandler):
         """
         try:
             data = json.loads(message)
-            prompt = data.get("message","").strip()
+            prompt = data.get("message","")
             if not prompt:
                 await self.write_message(json.dumps({"error":"Missing prompt"}))
                 return
@@ -183,14 +183,16 @@ class ChatWebSocketHandler(tornado.websocket.WebSocketHandler):
                 ]
             )
 
-            for chunk in request:
+            '''for chunk in request:
+                print(chunk)
                 message = chunk.choices[0].delta.content
                 await self.write_message(json.dumps({ "content": message }))
 
             # indicate end of stream
-            await self.write_message(json.dumps({ "event": "done" }))
+            await self.write_message(json.dumps({ "event": "done" }))'''
 
         except Exception as e:
+            print(e)
             await self.write_message(json.dumps({
                 "error": f"Server error: {e}"
             }))
