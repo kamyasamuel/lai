@@ -1,6 +1,6 @@
 import {
     FileText, FileSearch, MessageSquare, Layers, Gavel,
-    Briefcase, Search, Globe, Copy, HardDrive, Link as LinkIcon, FileBox
+    Briefcase, Search, Globe, Copy, HardDrive, Link as LinkIcon, FileBox,
   } from 'lucide-react';
   
   export const menuStructure = {

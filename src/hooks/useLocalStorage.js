@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+const API_BASE_URL = 'https://lawyers.legalaiafrica.com/api';
 export function useLocalStorage(key, initialValue) {
   const [value, setValue] = useState(() => {
     const saved = localStorage.getItem(key);

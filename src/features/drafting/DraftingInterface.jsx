@@ -84,7 +84,7 @@ export default function DraftingInterface() {
     setSubmitted(true)
     setLoading(true)
     try {
-      const { draft } = await draftAPI(input)
+      const { draft } = await fetch('https://lawyers.legalaiafrica.com/api/draft', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt: input }) }).then(res => res.json());
       setGenerated(draft || 'No draft returned.')
     } catch (err) {
       setGenerated(`Error generating draft: ${err.message}`)

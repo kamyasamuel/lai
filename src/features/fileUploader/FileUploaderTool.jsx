@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { uploadDocumentAPI } from './uploaderService';
+import { uploadDocumentAPI } from 'lawyers.legalaiafrica.com/api/uploaderService';
 
 export default function FileUploaderTool({ title }) {
   const [file, setFile] = useState(null);

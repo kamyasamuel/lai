@@ -2,6 +2,8 @@ import React from 'react'
 import { menuStructure } from '../../constants/menuStructure'
 import { starterContent } from '../../constants/starterContent'
 
+const API_BASE_URL = 'https://lawyers.legalaiafrica.com/api';
+
 export default function LandingPage({ onSelect }) {
   return (
     <div className="h-full flex flex-col justify-center items-center text-center text-white p-8 custom-p-8">

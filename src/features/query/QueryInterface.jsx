@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { queryAPI } from './QueryService';
 import LoadingIndicator from '../../components/LoadingIndicator';
+import axios from 'axios';
 import { Search } from 'lucide-react';
 
 const useCases = {
@@ -27,7 +27,7 @@ export default function QueryInterface({ title }) {
     if (!query.trim()) return;
     setLoading(true);
     try {
-      const { results: res } = await queryAPI(title, query);
+      const { data: { results: res } } = await axios.post('https://lawyers.legalaiafrica.com/api/query', { title, query });
       setResults(res || []);
     } catch (e) {
       setResults([{ title:'Error', snippet: e.message }]);

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { analyzeContractAPI } from './contractAnalysisService';
+import { analyzeContractAPI } from './contractAnalysisService'; // Assuming analyzeContractAPI now points to the new domain internally
 import FileInput from '../../components/FileInput'; 
 import LoadingIndicator from '../../components/LoadingIndicator'; // Assuming a loading indicator component
 

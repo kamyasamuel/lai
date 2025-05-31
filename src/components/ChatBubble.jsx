@@ -1,5 +1,6 @@
 import React from 'react';
 export default function ChatBubble({ msg }) {
+  // No API calls to change in this file.
   const isUser = msg.sender === 'user';
   const bg = isUser ? 'bg-[#444] self-end ml-auto' : 'bg-[#333] self-start mr-auto';
   return (

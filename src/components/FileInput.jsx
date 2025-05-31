@@ -1,7 +1,7 @@
 import React from 'react';
 export default function FileInput({ onChange }) {
   return (
-    <input
+    <input 
       type="file"
       accept=".pdf,.doc,.docx"
       onChange={onChange}

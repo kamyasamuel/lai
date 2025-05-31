@@ -1,5 +1,7 @@
 import React from 'react'
 import { ChevronLeft, ChevronRight, Menu, X } from 'lucide-react'
+
+const API_BASE_URL = 'https://lawyers.legalaiafrica.com/api'
 import { menuStructure } from '../constants/menuStructure'
 
 export default function Sidebar({

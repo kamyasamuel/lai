@@ -18,7 +18,7 @@ function DocumentLibraryInterface() {
     setError(null);
     try {
       // Replace with your actual API endpoint
-      const response = await fetch('https://your-document-server.com/documents');
+      const response = await fetch('https://lawyers.legalaiafrica.com/api/documents');
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -37,7 +37,7 @@ function DocumentLibraryInterface() {
     setError(null);
     try {
       // Replace with your actual API endpoint
-      const response = await fetch(`https://your-document-server.com/documents?search=${searchTerm}`);
+      const response = await fetch(`https://lawyers.legalaiafrica.com/api/documents?search=${searchTerm}`);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }

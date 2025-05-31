@@ -6,7 +6,6 @@ import DraftingInterface from './features/drafting/DraftingInterface'
 import FileAnalysisInterface from './features/fileanalysis/FileAnalysisInterface' // Corrected import path
 //import FileUploaderTool from './features/fileUploader/FileUploaderTool'
 import QueryInterface from './features/query/QueryInterface'
-import MyDriveInterface from './features/myDrive/MyDriveInterface'
 import ContractAnalysisInterface from './features/contractAnalysis/ContractAnalysisInterface'
 import DocumentComparisonInterface from './features/documentComparison/DocumentComparisonInterface'
 import DocumentLibraryInterface from './features/documentLibrary/DocumentLibraryInterface'
@@ -38,9 +37,7 @@ export default function App() {
       case 'Web & News':
       case 'Laws & Regulations':
       case 'Case Law':
-        return <QueryInterface title={activeFeature} />
-      case 'My Drive':
-        return <MyDriveInterface />
+        return <QueryInterface title={activeFeature} />      
       default:
         return <LandingPage onSelect={setActiveFeature} />
     }

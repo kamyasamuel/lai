@@ -1,5 +1,6 @@
 import { useState } from 'react';
 export function useSpeechRecognition(onResult) {
+  const apiBaseUrl = 'https://lawyers.legalaiafrica.com/api';
   const [listening, setListening] = useState(false);
   const start = () => {
     if (!window.webkitSpeechRecognition) return;
