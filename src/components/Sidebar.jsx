@@ -14,7 +14,7 @@ export default function Sidebar({
     <>
       {/* Mobile top‐bar with menu toggle */}
       <div className="mob-menu h-fit md:hidden flex items-center justify-between bg-[#111] p-2 border-b border-[#333]">
-        <span className="text-white font-semibold">Legal AI Africa</span>
+        {open && <span className="text-white font-semibold">Legal AI Africa</span>}
         <button onClick={toggle} className="text-white">
           {open ? <X size={24} /> : <Menu size={24} />}
         </button>

@@ -4,7 +4,7 @@ import { Search } from 'lucide-react';
 
 function DocumentLibraryInterface() {
   const [searchTerm, setSearchTerm] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
+  const [documentList, setDocumentList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -18,12 +18,16 @@ function DocumentLibraryInterface() {
     setError(null);
     try {
       // Replace with your actual API endpoint
-      const response = await fetch('https://lawyers.legalaiafrica.com/api/documents');
+      let url = 'https://lawyers.legalaiafrica.com/api/documents';
+      if (searchTerm) {
+        url = `https://lawyers.legalaiafrica.com/api/documents?search=${searchTerm}`;
+      }
+      const response = await fetch(url);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       const data = await response.json();
-      setSearchResults(data);
+      setDocumentList(data);
     } catch (e) {
       setError('Failed to fetch documents.');
       console.error(e);
@@ -32,23 +36,8 @@ function DocumentLibraryInterface() {
     }
   };
 
-  const handleSearch = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      // Replace with your actual API endpoint
-      const response = await fetch(`https://lawyers.legalaiafrica.com/api/documents?search=${searchTerm}`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      setSearchResults(data);
-    } catch (e) {
-      setError('Failed to perform search.');
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
+  const handleSearch = () => {
+    fetchDocuments();
   };
 
   const handleInputChange = (event) => {
@@ -70,10 +59,10 @@ function DocumentLibraryInterface() {
       {loading && <LoadingIndicator text="Loading..." />}
       {error && <p className="text-red-500">Error: {error}</p>}
       <div className="space-y-2">
-        {searchResults.map((doc, index) => (
+        {documentList.map((doc, index) => (
           <div key={index} className="bg-[#222] p-3 rounded border border-[#333]">
-            <a href={doc.link} target="_blank" rel="noopener noreferrer" className="text-[#8c00cc] underline">
-              {doc.title}
+            <a href={`/uploads/${doc}`} target="_blank" rel="noopener noreferrer" className="text-[#8c00cc] underline">
+              {doc}
             </a>
           </div>
         ))}

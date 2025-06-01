@@ -14,6 +14,10 @@ from dotenv import load_dotenv
 from googleapiclient.discovery import build
 import tornado.websocket
 from docx import Document
+import PyPDF2
+import glob  # Import the glob module
+from urllib.parse import urlparse, parse_qs
+
 # Load environment variables from .env file
 load_dotenv()
 
@@ -67,6 +71,38 @@ async def generate_draft(prompt: str) -> str:
     draft_text = response.choices[0].message.content.strip() # type: ignore
     return draft_text
 
+def get_document_text(file_data) -> str:
+    """
+    Extracts text content from docx or pdf file data.
+    Employ OCD processing for pdf files.
+    """
+    filename = file_data['filename']
+    file_body = file_data['body']
+
+    text = ""
+    if filename.lower().endswith(".docx"):
+        # Create a BytesIO object from the file body
+        from io import BytesIO
+        byte_stream = BytesIO(file_body)
+        document = Document(byte_stream)
+        for paragraph in document.paragraphs:
+            text += paragraph.text + ' '
+    elif filename.lower().endswith(".pdf"):
+        # Create a BytesIO object from the file body
+        from io import BytesIO
+        byte_stream = BytesIO(file_body)
+        try:
+            # Use PdfReader from PyPDF2
+            reader = PyPDF2.PdfReader(byte_stream)
+            for page_num in range(len(reader.pages)):
+                text += reader.pages[page_num].extract_text() + ' '
+        except Exception as e:
+            logging.error(f"Error reading PDF file {filename}: {e}")
+            raise HTTPError(400, f"Could not read PDF file {filename}.")
+    else:
+        raise HTTPError(400, f"Unsupported file type: {filename}. Only .docx and .pdf are supported.")
+
+    return text
 
 class BaseCORSHandler(tornado.web.RequestHandler):
     def set_default_headers(self):
@@ -130,7 +166,7 @@ class AnalysisHandler(BaseCORSHandler):
             if filename.endswith("docx"):
                 document = Document(file_path)
                 for paragraph in document.paragraphs:
-                    text+=paragraph.text +'\n'
+                    text+=paragraph.text +''
             elif filename.endswith("pdf"):
                 ...
 
@@ -252,6 +288,75 @@ class QueryHandler(BaseCORSHandler):
             self.write({"response": response_text})
         except Exception as e:
             raise HTTPError(500, f"An error occurred during query processing: {e}")
+            
+class DocumentComparisonHandler(BaseCORSHandler):
+    async def post(self):
+        try:
+            files = self.request.files
+            if 'document1' not in files or 'document2' not in files:
+                self.set_status(400)
+                return self.write({"error": "Two document files named 'document1' and 'document2' are required."})
+
+            doc1_file_data = files['document1'][0]
+            doc2_file_data = files['document2'][0]
+
+            # Extract text content from files
+            doc1_content = get_document_text(doc1_file_data)
+            doc2_content = get_document_text(doc2_file_data)
+
+            # Use OpenAI API to compare documents
+            comparison_response = openai_client.chat.completions.create(
+                model="gpt-4o", # Or a suitable model for comparison
+                messages=[
+                    {"role": "system", "content": "You are an expert document comparison AI. Analyze the two provided documents and highlight key differences and similarities in a clear and concise manner. Format the output as a readable text."},
+                    {"role": "user", "content": f"Compare Document 1 and Document 2. Document 1:{doc1_content} Document 2:{doc2_content}"}
+                ],
+                temperature=0.2,
+                max_tokens=2000 # Adjust as needed
+            )
+
+            comparison_result = comparison_response.choices[0].message.content.strip()
+
+            self.set_header("Content-Type", "application/json")
+            self.write({"comparisonResult": comparison_result})
+
+        except HTTPError as e:
+            # Re-raise HTTPError to be handled by Tornado
+            raise e
+        except Exception as e:
+            logging.error(f"Error during document comparison: {e}")
+            self.set_status(500)
+            self.write({"error": "Failed to compare documents using AI.", "details": str(e)})
+
+class DocumentLibraryHandler(BaseCORSHandler):
+    async def get(self):
+        try:
+            # Get the search term from the query string
+            query = self.request.uri
+            parsed_url = urlparse(query)
+            query_params = parse_qs(parsed_url.query)
+            search_term = query_params.get('search', [''])[0]  # Default to empty string if no search term
+
+            # List all files in the UPLOAD_DIR
+            all_files = glob.glob(os.path.join(UPLOAD_DIR, '*.*'))  # Match any file extension
+
+            # Filter files based on the search term (if provided)
+            if search_term:
+                search_term_lower = search_term.lower()
+                filtered_files = [f for f in all_files if os.path.basename(f).lower().find(search_term_lower) != -1]
+            else:
+                filtered_files = all_files
+
+            # Format the file list for the response
+            document_list = [os.path.basename(f) for f in filtered_files]
+
+            self.set_header("Content-Type", "application/json")
+            self.write(json.dumps(document_list))
+
+        except Exception as e:
+            logging.error(f"Error in document library handler: {e}")
+            self.set_status(500)
+            self.write({"error": "Failed to retrieve document list.", "details": str(e)})
 
 class Application(Application): # type: ignore
     def __init__(self):
@@ -260,6 +365,8 @@ class Application(Application): # type: ignore
             (r"/analyze/(.*)", AnalysisHandler),
             (r"/ws/chat", ChatWebSocketHandler),
             (r"/query", QueryHandler), # New query endpoint
+            (r"/compare-documents", DocumentComparisonHandler), # New comparison endpoint
+            (r"/documents", DocumentLibraryHandler), # New document library endpoint
         ]
         settings = {
             "debug": True,   # reload on change, more verbose errors
