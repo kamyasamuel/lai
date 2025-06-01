@@ -43,7 +43,7 @@ export default function QueryInterface({ title }) {
         Use AI to explore {title.toLowerCase()} across jurisdictions.
       </p>
       <div className="flex gap-2 flex-wrap justify-center mb-6">
-        {useCasesByTitle[title]?.map((ex,i)=>(
+        {useCases[title]?.map((ex,i)=>(
           <button
             key={i}
             onClick={()=>setQuery(ex)}
