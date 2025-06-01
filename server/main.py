@@ -234,6 +234,8 @@ class ChatWebSocketHandler(tornado.websocket.WebSocketHandler):
             }))
             
 class QueryHandler(BaseCORSHandler):
+    #TODO
+    """Needs work to implement google search api"""
     async def post(self):
         try:
             data = json.loads(self.request.body)
