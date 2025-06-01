@@ -1,6 +1,6 @@
 export async function compareDocumentsAPI(formData) {
   try {
-    const res = await fetch('https://lawyers.legalaiafrica.com/compare-documents', {
+    const res = await fetch('https://lawyers.legalaiafrica.com/api/compare-documents', {
       method: 'POST',
       body: formData,
     });

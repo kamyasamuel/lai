@@ -166,7 +166,7 @@ class ChatWebSocketHandler(tornado.websocket.WebSocketHandler):
         """
         try:
             data = json.loads(message)
-            prompt = data.get("message","")
+            prompt = data.get("user_message")
             if not prompt:
                 await self.write_message(json.dumps({"error":"Missing prompt"}))
                 return
@@ -183,13 +183,13 @@ class ChatWebSocketHandler(tornado.websocket.WebSocketHandler):
                 ]
             )
 
-            '''for chunk in request:
+            for chunk in request:
                 print(chunk)
                 message = chunk.choices[0].delta.content
                 await self.write_message(json.dumps({ "content": message }))
 
             # indicate end of stream
-            await self.write_message(json.dumps({ "event": "done" }))'''
+            await self.write_message(json.dumps({ "event": "done" }))
 
         except Exception as e:
             print(e)
@@ -256,10 +256,10 @@ class QueryHandler(BaseCORSHandler):
 class Application(Application): # type: ignore
     def __init__(self):
         handlers = [
-            (r"/api/draft", DraftHandler),
-            (r"/api/analyze", AnalysisHandler),
-            (r"/api/ws/chat", ChatWebSocketHandler),
-            (r"/api/query", QueryHandler), # New query endpoint
+            (r"/draft", DraftHandler),
+            (r"/analyze/(.*)", AnalysisHandler),
+            (r"/ws/chat", ChatWebSocketHandler),
+            (r"/query", QueryHandler), # New query endpoint
         ]
         settings = {
             "debug": True,   # reload on change, more verbose errors
@@ -268,7 +268,7 @@ class Application(Application): # type: ignore
         super().__init__(handlers, **settings)
 
 
-def run_server(port: int = 9090):
+def run_server(port: int = 4040):
     app = Application()
     app.listen(port)
     print(f"[server] Listening on http://localhost:{port}")
@@ -279,7 +279,7 @@ def run_exec_mode(prompt: str):
     sys.stdout.write(json.dumps(result, indent=2))
 
 def main():
-    parser = argparse.ArgumentParser(description="Legal‐AI Tornado Server")
+    parser = argparse.ArgumentParser(description="Legal-AI Tornado Server")
     parser.add_argument(
         "--mode", choices=["server", "exec"], default="server",
         help="server = start HTTP server; exec = generate a draft and exit"
@@ -289,7 +289,7 @@ def main():
         help="Prompt text (only used in --mode=exec)"
     )
     parser.add_argument(
-        "--port", "-p", type=int, default=9090,
+        "--port", "-p", type=int, default=4040,
         help="Port to listen on (server mode)"
     )
     args = parser.parse_args()

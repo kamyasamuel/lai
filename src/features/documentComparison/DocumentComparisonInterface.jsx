@@ -20,7 +20,7 @@ export default function DocumentComparisonInterface() {
 
     try {
       // Assuming compareDocumentsAPI exists and returns a comparison result object
-      const comparisonResult = await fetch('https://lawyers.legalaiafrica.com/api/compareDocuments', { method: 'POST', body: fd }).then(res => res.json());
+      const comparisonResult = await fetch('https://lawyers.legalaiafrica.com/api/compare-documents', { method: 'POST', body: fd }).then(res => res.json());
       setResult(comparisonResult);
     } catch(error) {
       setResult({ error: 'Error comparing documents: ' + error.toString() });
