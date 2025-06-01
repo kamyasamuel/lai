@@ -71,7 +71,7 @@ async def generate_draft(prompt: str) -> str:
 class BaseCORSHandler(tornado.web.RequestHandler):
     def set_default_headers(self):
         # Allow React dev server on port 5173
-        self.set_header("Access-Control-Allow-Origin", "http://lawyers.legalaiafrica.com")
+        self.set_header("Access-Control-Allow-Origin", "https://lawyers.legalaiafrica.com")
         self.set_header("Access-Control-Allow-Credentials", "true")
         self.set_header("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
         self.set_header(
@@ -256,10 +256,10 @@ class QueryHandler(BaseCORSHandler):
 class Application(Application): # type: ignore
     def __init__(self):
         handlers = [
-            (r"/draft", DraftHandler),
-            (r"/analyze", AnalysisHandler),
-            (r"/ws/chat", ChatWebSocketHandler),
-            (r"/query", QueryHandler), # New query endpoint
+            (r"/api/draft", DraftHandler),
+            (r"/api/analyze", AnalysisHandler),
+            (r"/api/ws/chat", ChatWebSocketHandler),
+            (r"/api/query", QueryHandler), # New query endpoint
         ]
         settings = {
             "debug": True,   # reload on change, more verbose errors
