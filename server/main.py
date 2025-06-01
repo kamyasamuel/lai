@@ -257,7 +257,7 @@ class Application(Application): # type: ignore
     def __init__(self):
         handlers = [
             (r"/draft", DraftHandler),
-            (r"/analyze", AnalysisHandler),
+            (r"/analyze/(.*)", AnalysisHandler),
             (r"/ws/chat", ChatWebSocketHandler),
             (r"/query", QueryHandler), # New query endpoint
         ]

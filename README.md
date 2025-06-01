@@ -7,3 +7,13 @@ A React + TailwindCSS app for AI‑powered legal drafting, research, summarizati
 1. Install dependencies  
    ```bash
    npm install
+
+# Backend api call endpoints
+   - /api/documents
+   - /api/compare-documents
+   - /api/analyze/contract
+   - /api/query
+   - /api/mydrive/legal-ai-africa/docs
+   - /api/draft
+   - /api/analyze
+   - /ws/chat
