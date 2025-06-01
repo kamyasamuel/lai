@@ -1,5 +1,5 @@
 export async function sendToChatAPI(message) {
-  const res = await fetch('https://lawyers.legalaiafrica.com/api/chat', {
+  const res = await fetch('https://lawyers.legalaiafrica.com/ws/chat', {
     method: 'POST',
     headers: { 'Content-Type':'application/json' },
     body: JSON.stringify({ message })
