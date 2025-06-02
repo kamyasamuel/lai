@@ -1,8 +1,45 @@
-GET https://legalaiafrica.com/api/documents
-POST https://legalaiafrica.com/api/compare-documents
-POST https://legalaiafrica.com/api/analyze/contract
-POST https://legalaiafrica.com/api/query
-GET https://legalaiafrica.com/api/mydrive/legal-ai-africa/docs
-POST https://legalaiafrica.com/api/draft
-POST https://legalaiafrica.com/api/analyze
-wws://legalaiafrica.com/ws/chat
+# Returns a default list of a limited number of documents
+# 10 - 20 documents
+# Frontend should be modified to handle an array of dictionary objects
+#   {
+#    "file_name": "65a29f5f-af9e-40d1-8a0a-6f00470b9836.pdf"
+#  },
+#  {
+#    "doc_name": "Okello v Uganda 2025 UGCA 91 (28 March 2025)",
+#    "file_name": "f97e8072-e1c0-4789-b2f6-70f3afc21d07.pdf"
+#  }
+#]
+GET https://lawyers.legalaiafrica.com/api/documents
+###
+# and
+GET https://lawyers.legalaiafrica.com/api/documents?search=kweyolo
+###
+
+# Returns {"comparisonResult": comparison_result}
+POST https://lawyers.legalaiafrica.com/api/compare-documents
+###
+
+# Responds with a json of {'summary': summary}
+POST https://lawyers.legalaiafrica.com/api/analyze/contract
+###
+
+# When complete it should respond with {"response": response_text}
+POST https://lawyers.legalaiafrica.com/api/query
+###
+
+# More underlying api calls perhaps
+# These will fetch user's uploaded documents
+#GET https://lawyers.legalaiafrica.com/api/mydrive/legal-ai-africa/docs
+###
+
+# Responds with {"draft": draft_text}
+POST https://lawyers.legalaiafrica.com/api/draft
+###
+
+
+POST https://lawyers.legalaiafrica.com/api/analyze
+###
+# Legal document search
+
+# Chat communicates via websockets and is not applicable here
+# wss://lawyers.legalaiafrica.com/api/ws/chat responds with { "content": message }
