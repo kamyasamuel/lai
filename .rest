@@ -1,0 +1,8 @@
+GET https://legalaiafrica.com/api/documents
+POST https://legalaiafrica.com/api/compare-documents
+POST https://legalaiafrica.com/api/analyze/contract
+POST https://legalaiafrica.com/api/query
+GET https://legalaiafrica.com/api/mydrive/legal-ai-africa/docs
+POST https://legalaiafrica.com/api/draft
+POST https://legalaiafrica.com/api/analyze
+wws://legalaiafrica.com/ws/chat
