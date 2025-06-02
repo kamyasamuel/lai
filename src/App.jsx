@@ -10,7 +10,6 @@ import MyDriveInterface from './features/myDrive/MyDriveInterface'
 import ContractAnalysisInterface from './features/contractAnalysis/ContractAnalysisInterface'
 import DocumentComparisonInterface from './features/documentComparison/DocumentComparisonInterface'
 import DocumentLibraryInterface from './features/documentLibrary/DocumentLibraryInterface'
-import MyDriveInterface from './features/myDrive/MyDriveInterface' // Import MyDriveInterface
 import { menuStructure } from './constants/menuStructure'
 
 
