@@ -41,7 +41,11 @@ export default function ChatInterface() {
     setLoading(true);
 
     // open a new WS for this message
+<<<<<<< HEAD
     const ws = new WebSocket(import.meta.env.VITE_WSS_URL);
+=======
+    const ws = new WebSocket('wss://lawyers.legalaiafrica.com/api/ws-chat');
+>>>>>>> 8ebc4607f6b00b42778488ce621556ff51a4a52b
 
     // accumulate the AI response in this object
     const aiMsg = { text: '', sender: 'ai', timestamp: Date.now() };

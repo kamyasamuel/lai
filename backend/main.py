@@ -270,7 +270,7 @@ class Application(Application): # type: ignore
         super().__init__(handlers, **settings)
 
 
-def run_server(port: int = 9090):
+def run_server(port: int = 4040):
     app = Application()
     app.listen(port)
     print(f"[server] Listening on http://localhost:{port}")
@@ -291,7 +291,7 @@ def main():
         help="Prompt text (only used in --mode=exec)"
     )
     parser.add_argument(
-        "--port", "-p", type=int, default=9090,
+        "--port", "-p", type=int, default=4040,
         help="Port to listen on (server mode)"
     )
     args = parser.parse_args()
