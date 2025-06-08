@@ -264,6 +264,8 @@ class Application(Application): # type: ignore
         settings = {
             "debug": True,   # reload on change, more verbose errors
             "autoreload": True,
+            "default_host": None,
+            "transforms": None
         }
         super().__init__(handlers, **settings)
 
