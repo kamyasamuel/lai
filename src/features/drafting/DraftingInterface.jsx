@@ -72,7 +72,8 @@ export default function DraftingInterface() {
 import React, { useState } from 'react'
 import { draftAPI } from './draftingService'
 import LoadingIndicator from '../../components/LoadingIndicator'
-// src/features/drafting/DraftingInterface.jsx
+import MarkdownRenderer from '../../components/MarkdownRenderer'
+
 export default function DraftingInterface() {
   const [input, setInput] = useState('')
   const [generated, setGenerated] = useState('')
@@ -94,7 +95,7 @@ export default function DraftingInterface() {
   }
 
   return (
-    <div className="h-full p-8 text-white flex flex-col">
+    <div className="h-full text-white flex flex-col page-container-padding">
       {!submitted ? (
         // initial prompt UI
         <div className="flex-1 flex flex-col justify-center items-center text-center">
@@ -125,7 +126,7 @@ export default function DraftingInterface() {
               {loading ? (
                 <LoadingIndicator text="Generating draft..." />
               ) : (
-                generated
+                <MarkdownRenderer content={generated} />
               )}
             </div>
           </div>

@@ -1,6 +1,8 @@
+import API_BASE_URL from '../../config';
+
 export async function compareDocumentsAPI(formData) {
   try {
-    const res = await fetch('https://lawyers.legalaiafrica.com/compare-documents', {
+    const res = await fetch(`${API_BASE_URL}/compare-documents`, {
       method: 'POST', 
       body: formData,
     });

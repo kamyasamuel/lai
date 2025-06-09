@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { analyzeContractAPI } from './contractAnalysisService';
 import FileInput from '../../components/FileInput'; 
 import LoadingIndicator from '../../components/LoadingIndicator'; // Assuming a loading indicator component
+import MarkdownRenderer from '../../components/MarkdownRenderer';
 
 export default function ContractAnalysisInterface() {
   const [file, setFile] = useState(null);
@@ -42,15 +43,15 @@ export default function ContractAnalysisInterface() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-full text-white p-4">
-      <div className="flex-1 w-full max-w-3xl space-y-4 overflow-y-auto">
+    <div className="flex flex-col items-center justify-center h-full text-white page-container-padding">
+      <div className={`w-full max-w-3xl space-y-4 overflow-y-auto ${output ? 'flex-1' : ''}`}>
         {output && (
           <div className="bg-[#2a2a2a] p-4 rounded shadow relative">
             <h3 className="text-lg font-bold mb-2">Contract Analysis Result</h3>
             {loading ? (
                <LoadingIndicator text="Analyzing contract..." />
             ) : (
-               <div id='contract-analysis-output' dangerouslySetInnerHTML={{ __html: output }}></div>
+               <MarkdownRenderer content={output} />
             )}
 
             {/* Download button - uncomment if download is needed */}

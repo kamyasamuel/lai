@@ -4,7 +4,7 @@ import { starterContent } from '../../constants/starterContent'
 
 export default function LandingPage({ onSelect }) {
   return (
-    <div className="h-full flex flex-col justify-center items-center text-center text-white p-8 custom-p-8">
+    <div className="h-full flex flex-col justify-center items-center text-center text-white page-container-padding">
       <h1 className="text-4xl font-bold mb-4">Welcome to Legal AI Africa</h1>
       <p className="text-gray-400 text-lg max-w-2xl mb-8">
         Your AI-powered legal assistant for document analysis, research,

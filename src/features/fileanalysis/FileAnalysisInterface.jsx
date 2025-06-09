@@ -72,6 +72,7 @@ export default function FileAnalysisInterface() {
 import React, { useState } from 'react';
 import { analyzeFileAPI } from './fileAnalysisService';
 import FileInput from '../../components/FileInput';
+import MarkdownRenderer from '../../components/MarkdownRenderer';
 
 export default function FileAnalysisInterface() {
   const [file, setFile] = useState(null);
@@ -107,12 +108,12 @@ export default function FileAnalysisInterface() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-full text-white p-4">
-      <div className="flex-1 w-full max-w-3xl space-y-4 overflow-y-auto">
+    <div className="flex flex-col items-center justify-center h-full text-white page-container-padding">
+      <div className={`w-full max-w-3xl space-y-4 overflow-y-auto ${output ? 'flex-1' : ''}`}>
         {output && (
           <div className="bg-[#2a2a2a] p-4 rounded shadow relative">
             <h3 className="text-lg font-bold mb-2">AI Analysis</h3>
-            <div id='analysis' dangerouslySetInnerHTML={{ __html: output }}></div>
+            <MarkdownRenderer content={output} />
             <button onClick={handleDownload}
               className="absolute top-4 right-4 flex items-center gap-1 text-sm custom-button
                          px-3 py-1 rounded hover:bg-[#a02cd0]">

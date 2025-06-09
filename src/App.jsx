@@ -15,7 +15,7 @@ import { menuStructure } from './constants/menuStructure'
 
 export default function App() {
   const [activeFeature, setActiveFeature] = useState(null)
-  const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarOpen, setSidebarOpen] = useState(false)
 
   const renderFeature = () => {
     switch (activeFeature) {

@@ -9,14 +9,14 @@
     background: var(--bg-theme);
 }
 ::-webkit-scrollbar-thumb {
-    background: orangered;
+    background: orange;
     -webkit-border-radius: 1ex;
 }
 
 ::-webkit-scrollbar-corner {
     background: #444;
 }
-svg, .text-\[\#8c00cc\] {color: orangered; size: 2rem;}
+svg, .text-\[\#8c00cc\] {color: orange; size: 2rem;}
 textarea {
     resize: none;
 }
@@ -34,7 +34,6 @@ textarea:focus, input:focus {
 .flex-wrap {flex-wrap: wrap;}
 .custom-rounded {border-radius: 2rem;}
 .custom-px-4 {padding-right: 2rem; padding-left: 2rem;}
-.custom-p-8 {padding: 2rem 20rem;}
 button {
     border-radius: 2rem;
     padding: 10px;
@@ -43,20 +42,52 @@ button {
 .flex {display: flex;}
 .custom-button {
     border-radius: 2rem;
-    border: solid 1px orangered;
+    border: solid 1px orange;
 }
 .gap-2 {gap: 2rem;}
 .center-items {place-items: center;}
 .hover-cursor:hover {cursor: pointer;}
 .scale-1:hover {transform: scale(1.1); transition: all ease 0.5s;}
 @media screen and (max-width: 37.5rem) {
-    .custom-p-8 {padding: 2rem 1rem;}
-    #root .main-content {
-        flex-direction: column;
-    }
     main div:first-child {
         justify-content: flex-start;
-        margin: 1rem;
+        margin: 0em
     }
     .mob-menu {padding: 1rem 2rem;}
+}
+
+.markdown-content h1,
+.markdown-content h2,
+.markdown-content h3 {
+  margin-top: 1rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+.markdown-content p {
+  margin-bottom: 1rem;
+}
+.markdown-content a {
+  color: #fb923c;
+  text-decoration: underline;
+}
+.markdown-content code {
+  background-color: #2a2a2a;
+  padding: 0.2rem 0.4rem;
+  border-radius: 0.25rem;
+  font-family: monospace;
+}
+.markdown-content pre code {
+  padding: 1rem;
+  display: block;
+  overflow-x: auto;
+}
+
+.page-container-padding {
+  padding: 2rem 10rem;
+}
+
+@media screen and (max-width: 768px) {
+  .page-container-padding {
+    padding: 2rem 0.5rem;
+  }
 }

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { compareDocumentsAPI } from './documentComparisonService'; // Assuming a new service
 import FileInput from '../../components/FileInput';
 import LoadingIndicator from '../../components/LoadingIndicator'; // Assuming a loading indicator component
+import MarkdownRenderer from '../../components/MarkdownRenderer';
 
 export default function DocumentComparisonInterface() {
   const [file1, setFile1] = useState(null);
@@ -30,17 +31,15 @@ export default function DocumentComparisonInterface() {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-full text-white p-4">
-      <div className="flex-1 w-full max-w-3xl space-y-4 overflow-y-auto">
+    <div className="flex flex-col items-center justify-center h-full text-white page-container-padding">
+      <div className={`w-full max-w-3xl space-y-4 overflow-y-auto ${result ? 'flex-1' : ''}`}>
         {result && (
           <div className="bg-[#2a2a2a] p-4 rounded shadow relative">
             <h3 className="text-lg font-bold mb-2">Comparison Result</h3>
             {loading ? (
                <LoadingIndicator text="Comparing documents..." />
             ) : (
-               <pre className="whitespace-pre-wrap text-sm">
-                 {JSON.stringify(result, null, 2)}
-               </pre>
+               <MarkdownRenderer content={result.comparisonResult || JSON.stringify(result, null, 2)} />
             )}
           </div>
         )}

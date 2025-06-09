@@ -1,5 +1,7 @@
+import API_BASE_URL from '../../config';
+
 export async function analyzeFileAPI(formData) {
-  const res = await fetch('https://lawyers.legalaiafrica.com/analyze', {
+  const res = await fetch(`${API_BASE_URL}/analyze`, {
     method: 'POST',
     body: formData
   });

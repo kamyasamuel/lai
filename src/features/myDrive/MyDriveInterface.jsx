@@ -1,6 +1,7 @@
 import React, { useState } from 'react'
 import { connectDrive } from './driveService'
 import { FileBox, Link as LinkIcon, Download, Eye } from 'lucide-react'
+import API_BASE_URL from '../../config';
 
 const PROVIDERS = [
   { name: 'Google Drive', icon: FileBox },
@@ -10,7 +11,7 @@ const PROVIDERS = [
 
 const USE_CASES = [
   'Access contracts saved on Google Drive.',
-  'Upload a local legal brief to Legal AI Africa’s storage.',
+  "Upload a local legal brief to Legal AI Africa's storage.",
   'Sync recent folders from OneDrive for analysis.',
 ]
 
@@ -28,7 +29,7 @@ export default function MyDriveInterface() {
     try {
       const msg = await connectDrive(providerName)
       if (providerName === 'Legal AI Africa') {
-        const response = await fetch('https://lawyers.legalaiafrica.com/mydrive/legal-ai-africa/docs');
+        const response = await fetch(`${API_BASE_URL}/documents`);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
@@ -39,7 +40,7 @@ export default function MyDriveInterface() {
         setStatus(msg)
       }
     } catch (err) {
- setLegalAiAfricaFiles([]);
+      setLegalAiAfricaFiles([]);
       setStatus(`Error connecting to ${providerName}: ${err.message}`)
     } finally {
       setLoading('')
@@ -48,7 +49,7 @@ export default function MyDriveInterface() {
 
   return (
     // Main container with padding and centering
-    <div className="flex flex-col items-center p-6 text-white">
+    <div className="flex flex-col items-center text-white page-container-padding">
       {/* Title and description */}
       <h2 className="text-xl font-semibold mb-2">My Drive</h2>
       <p className="text-gray-400 text-sm mb-4">
@@ -102,8 +103,7 @@ export default function MyDriveInterface() {
                 <span>{filename}</span>
                 <div className="flex gap-2">
                   <a
-                    href={`https://lawyers.legalaiafrica.com/uploads/${filename}`}
-
+                    href={`${API_BASE_URL}/uploads/${filename}`}
                     className="flex items-center text-sm text-gray-400 hover:text-white"
                   >
                     <Download size={16} className="mr-1" /> Download
