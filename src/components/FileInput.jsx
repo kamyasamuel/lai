@@ -3,7 +3,7 @@ export default function FileInput({ onChange }) {
   return (
     <input
       type="file"
-      accept=".pdf,.doc,.docx"
+      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
       onChange={onChange}
       className="block w-full text-sm text-gray-400 file:mr-4 file:py-2 file:px-4
                  file:rounded file:border-0 file:text-sm file:font-semibold

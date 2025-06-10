@@ -119,10 +119,10 @@ export default function DraftingInterface() {
         </div>
       ) : (
         // result + actions UI
-        <div className="flex-1 flex flex-col justify-between">
+        <div className="flex-1 bg-[#111] rounded flex flex-col justify-between draft-output-container">
           <div className="p-4">
             <h3 className="text-lg font-semibold mb-2">Draft Output:</h3>
-            <div className="bg-[#333] p-4 rounded whitespace-pre-wrap max-h-[60vh] overflow-y-auto">
+            <div className="p-4 bg-[#222] rounded whitespace-pre-wrap max-h-[70vh] overflow-y-auto">
               {loading ? (
                 <LoadingIndicator text="Generating draft..." />
               ) : (
@@ -136,7 +136,7 @@ export default function DraftingInterface() {
               className="flex-1 p-2 rounded bg-[#111] text-white border border-[#333]"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              rows={3}
+              rows={2}
             />
             <button
               onClick={handleGenerate}

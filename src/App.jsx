@@ -10,6 +10,7 @@ import MyDriveInterface from './features/myDrive/MyDriveInterface'
 import ContractAnalysisInterface from './features/contractAnalysis/ContractAnalysisInterface'
 import DocumentComparisonInterface from './features/documentComparison/DocumentComparisonInterface'
 import DocumentLibraryInterface from './features/documentLibrary/DocumentLibraryInterface'
+import AgenticSearchInterface from './features/agenticSearch/AgenticSearchInterface'
 import { menuStructure } from './constants/menuStructure'
 
 
@@ -34,8 +35,9 @@ export default function App() {
         return <DocumentComparisonInterface /> // Changed to new component
       case 'Document Library':
           return <DocumentLibraryInterface />
+      case 'Agentic Search':
+          return <AgenticSearchInterface />
       case 'Contract Search':
-      case 'Web & News':
       case 'Laws & Regulations':
       case 'Case Law':
         return <QueryInterface title={activeFeature} />

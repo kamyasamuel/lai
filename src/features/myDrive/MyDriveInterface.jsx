@@ -1,51 +1,64 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { connectDrive } from './driveService'
-import { FileBox, Link as LinkIcon, Download, Eye } from 'lucide-react'
+import { FileBox, Link as LinkIcon, Download, Eye, Upload } from 'lucide-react'
 import API_BASE_URL from '../../config';
-
-const PROVIDERS = [
-  { name: 'Google Drive', icon: FileBox },
-  { name: 'OneDrive',      icon: FileBox },
-  { name: 'Legal AI Africa', icon: LinkIcon },
-]
-
-const USE_CASES = [
-  'Access contracts saved on Google Drive.',
-  "Upload a local legal brief to Legal AI Africa's storage.",
-  'Sync recent folders from OneDrive for analysis.',
-]
+import { fetchDocumentsAPI } from '../documentLibrary/documentLibraryService';
+import LoadingIndicator from '../../components/LoadingIndicator';
+import FileInput from '../../components/FileInput';
+import { uploadDriveDocumentAPI } from './myDriveUploadService';
 
 export default function MyDriveInterface() {
   // status message shown below the buttons
   const [status, setStatus] = useState('')
   // name of the provider currently loading (or empty string)
-  const [loading, setLoading] = useState('')
+  const [loading, setLoading] = useState(false)
   const [legalAiAfricaFiles, setLegalAiAfricaFiles] = useState([]);
+  const [fileToUpload, setFileToUpload] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState('');
 
-  const handleConnect = async (providerName) => {
-    setStatus('')
-    setLoading(providerName)
+  const loadDocuments = useCallback(async () => {
+    setLoading(true);
+    setStatus('');
+    try {
+      const docs = await fetchDocumentsAPI(); // Fetch all documents
+      setLegalAiAfricaFiles(docs);
+      setStatus('Documents loaded.');
+    } catch (err) {
+      setStatus(`Error loading documents: ${err.message}`);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadDocuments();
+  }, [loadDocuments]);
+
+  const handleFileUpload = async () => {
+    if (!fileToUpload) {
+      setUploadStatus('Please select a file to upload.');
+      return;
+    }
+
+    setUploading(true);
+    setUploadStatus('');
+
+    const formData = new FormData();
+    formData.append('file', fileToUpload);
 
     try {
-      const msg = await connectDrive(providerName)
-      if (providerName === 'Legal AI Africa') {
-        const response = await fetch(`${API_BASE_URL}/documents`);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        const files = await response.json();
-        setLegalAiAfricaFiles(files);
-        setStatus('Files loaded successfully.');
-      } else {
-        setStatus(msg)
-      }
+      const result = await uploadDriveDocumentAPI(formData);
+      setUploadStatus(`File uploaded successfully: ${result.filename}`);
+      setFileToUpload(null); // Clear the selected file
+      loadDocuments(); // Reload documents after upload
     } catch (err) {
-      setLegalAiAfricaFiles([]);
-      setStatus(`Error connecting to ${providerName}: ${err.message}`)
+      setUploadStatus(`Error uploading file: ${err.message}`);
+      console.error('Upload error:', err);
     } finally {
-      setLoading('')
+      setUploading(false);
     }
-  }
+  };
 
   return (
     // Main container with padding and centering
@@ -53,76 +66,67 @@ export default function MyDriveInterface() {
       {/* Title and description */}
       <h2 className="text-xl font-semibold mb-2">My Drive</h2>
       <p className="text-gray-400 text-sm mb-4">
-        Access and sync cloud‑based storage from multiple providers.
+        Your personal cloud storage for legal documents.
       </p>
 
-      {/* Example use‑cases */}
-      <div className="flex flex-wrap gap-2 justify-center mb-4">
-        {USE_CASES.map((ex, i) => (
-          <span
-            key={i}
-            className="bg-[#2c2c2c] text-sm px-3 py-1 rounded-full text-gray-300"
-          >
-            {ex}
-          </span>
-        ))}
-      </div>
-
-      {/* Connect buttons */}
-      <div className="flex flex-wrap gap-4 mb-6">
-        {PROVIDERS.map(({ name, icon: Icon }) => (
-          <button
-            key={name}
-            onClick={() => handleConnect(name)}
-            disabled={loading && loading !== name}
-            className={`
-              flex items-center gap-2 px-4 py-2 rounded text-white custom-button
-              ${loading === name
-                ? 'bg-[#444] cursor-wait'
-                : 'bg-[#111] hover:bg-[#222]'}
-            `}
-          >
-            <Icon size={16} />
-            {loading === name ? 'Connecting…' : name}
-          </button>
-        ))}
+      {/* Upload Section */}
+      <div className="w-full max-w-2xl mb-6 p-4 bg-[#1a1a1a] rounded-lg shadow-lg flex flex-col items-center">
+        <h3 className="text-lg font-semibold mb-3 border-b border-[#333] pb-2 w-full text-center">
+          Upload Documents
+        </h3>
+        <FileInput onChange={e => setFileToUpload(e.target.files[0])} />
+        <button
+          onClick={handleFileUpload}
+          disabled={!fileToUpload || uploading}
+          className="mt-4 custom-button px-6 py-2 rounded text-white disabled:opacity-50"
+        >
+          {uploading ? 'Uploading...' : 'Upload to Drive'}
+        </button>
+        {uploadStatus && <p className="mt-2 text-sm text-gray-300">{uploadStatus}</p>}
       </div>
 
       {/* Display Legal AI Africa files */}
-      {legalAiAfricaFiles.length > 0 && (
-        <div className="w-full max-w-2xl mt-6">
-          <h3 className="text-lg font-semibold mb-3 border-b border-[#333] pb-2">
-            Legal AI Africa Files
+      {loading ? (
+        <LoadingIndicator text="Loading your documents..." />
+      ) : legalAiAfricaFiles.length > 0 ? (
+        <div className="w-full max-w-2xl mt-6 p-4 bg-[#1a1a1a] rounded-lg shadow-lg">
+          <h3 className="text-lg font-semibold mb-4 border-b border-[#333] pb-2">
+            Your Legal AI Africa Cloud Drive
           </h3>
-          <ul className="space-y-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
             {legalAiAfricaFiles.map((filename, index) => (
-              <li
+              <div
                 key={index}
-                className="flex items-center justify-between bg-[#222] border border-[#333] p-3 rounded"
+                className="flex flex-col items-center justify-between bg-[#2a2a2a] border border-[#333] p-4 rounded-lg shadow-md hover:border-orange-500 transition-colors"
               >
-                <span>{filename}</span>
+                <FileBox size={48} className="text-orange-400 mb-2" />
+                <span className="text-center text-sm font-medium mb-3 truncate w-full">{filename}</span>
                 <div className="flex gap-2">
                   <a
                     href={`${API_BASE_URL}/uploads/${filename}`}
-                    className="flex items-center text-sm text-gray-400 hover:text-white"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center text-sm text-gray-400 hover:text-orange-500"
+                    download
                   >
                     <Download size={16} className="mr-1" /> Download
                   </a>
-                  {/* The "Open" action can be implemented later */}
-                  <button className="flex items-center text-sm text-gray-400 hover:text-white">
-                    <Eye size={16} className="mr-1" /> Open
-                  </button>
                 </div>
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
+        </div>
+      ) : (
+        <div className="text-center text-gray-500 py-10">
+          <p>No documents found in your drive.</p>
+          <p>Upload new documents above to get started!</p>
         </div>
       )}
 
       {/* Status message */}
-      {status && (
+      {status && !loading && (
         <div className="text-sm text-gray-300 bg-[#222] border border-[#333]
-                        px-4 py-2 rounded max-w-md text-center">
+                        px-4 py-2 rounded max-w-md text-center mt-4">
           {status}
         </div>
       )}

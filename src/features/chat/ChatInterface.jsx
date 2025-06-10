@@ -18,7 +18,7 @@ export default function ChatInterface() {
   }, [messages, loading]);
 
   const sendMessage = (text) => {
-    if (!text?.trim()) return; 
+    if (!text?.trim()) return;
     const userMsg = { text, sender: 'user', timestamp: Date.now() };
     setMessages((m) => [...m, userMsg]);
     setInput('');
@@ -33,20 +33,20 @@ export default function ChatInterface() {
       setMessages((prev) => {
         const withoutLast = prev.slice(0, -1);
         return [...withoutLast, { ...aiMsg }];
-      });
+          });
     };
 
     const onDone = () => {
-      setLoading(false);
+          setLoading(false);
     };
 
     const onError = (error) => {
       console.error('WebSocket error:', error);
       aiMsg.text = 'Error: Something went wrong.';
-      setMessages((prev) => {
+          setMessages((prev) => {
         const withoutLast = prev.slice(0, -1);
         return [...withoutLast, { ...aiMsg }];
-      });
+          });
       setLoading(false);
     };
 

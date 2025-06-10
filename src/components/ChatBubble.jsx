@@ -7,7 +7,7 @@ export default function ChatBubble({ msg }) {
   return (
     <div className={`p-3 rounded max-w-md ${bg}`}>
       <div className="text-xs text-gray-400 mb-1">
-        {isUser ? '🧑 You' : '🤖 AI'} · {new Date(msg.timestamp).toLocaleTimeString()}
+        {isUser ? '🧑 You' : 'Legal AI'} · {new Date(msg.timestamp).toLocaleTimeString()}
       </div>
       <MarkdownRenderer content={msg.text} />
     </div>

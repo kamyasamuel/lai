@@ -86,7 +86,6 @@ function DocumentLibraryInterface() {
         <h1 className="text-2xl font-bold mb-2 text-center">Search Document Library</h1>
         <p className="text-gray-400 mb-6 text-center">Find documents by name.</p>
         <div className="relative w-full max-w-md">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
           <input
             type="text"
             placeholder="Search documents by name..."
@@ -94,6 +93,7 @@ function DocumentLibraryInterface() {
             value={searchTerm}
             onChange={handleInputChange}
           />
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
         </div>
       </div>
     </div>
