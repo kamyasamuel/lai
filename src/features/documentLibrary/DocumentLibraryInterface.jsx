@@ -37,8 +37,8 @@ function DocumentLibraryInterface() {
 
   return (
     <div className="h-full flex flex-col md:flex-row text-white bg-[#0a0a0a] page-container-padding gap-6">
-      {/* Document List Section */}
-      <div className="flex-1 overflow-y-auto md:pt-8">
+      {/* Document Listing Section */}
+      <div className="flex-1 overflow-y-auto pt-8">
         <div className="mb-6">
           <h1 className="text-2xl font-bold mb-2">Available Documents</h1>
           <p className="text-gray-400">Browse and download from the document library.</p>

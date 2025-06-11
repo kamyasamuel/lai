@@ -1,84 +1,120 @@
 import React, { useState } from 'react';
-import { analyzeContractAPI } from './contractAnalysisService';
-import FileInput from '../../components/FileInput'; 
-import LoadingIndicator from '../../components/LoadingIndicator'; // Assuming a loading indicator component
+import { analyseContractAPI, chatWithContractAPI } from './contractAnalysisService';
+import FileUploader from '../fileUploader/FileUploaderTool';
+import LoadingIndicator from '../../components/LoadingIndicator';
 import MarkdownRenderer from '../../components/MarkdownRenderer';
+import ChatInterface from '../chat/ChatInterface'; // Assuming a generic chat interface component
 
-export default function ContractAnalysisInterface() {
-  const [file, setFile] = useState(null);
-  const [output, setOutput] = useState('');
-  const [submitted, setSubmitted] = useState(false);
+function ContractAnalysisInterface() {
+  const [analysis, setAnalysis] = useState('');
   const [loading, setLoading] = useState(false);
-  var filename = null; // To store filename for download, if applicable
+  const [error, setError] = useState(null);
+  const [fileName, setFileName] = useState('');
+  const [conversationHistory, setConversationHistory] = useState([]);
+  const [isChatActive, setIsChatActive] = useState(false);
 
-  const handleSubmit = async () => {
-    if (!file) return;
-    setSubmitted(true);
+  const handleFileAnalysis = async (file) => {
+    if (!file) {
+      setError('Please select a file for analysis.');
+      return;
+    }
+
     setLoading(true);
-    const fd = new FormData();
-    fd.append('file', file);
+    setError(null);
+    setAnalysis('');
+    setFileName(file.name);
+    setConversationHistory([]);
+    setIsChatActive(false);
+
+    const formData = new FormData();
+    formData.append('file', file);
+
     try {
-      // Assuming analyzeContractAPI exists and returns an object with a 'analysis' key
-      const analysisResult = await analyzeContractAPI(fd);
-      const analysis = analysisResult.analysis;
-      filename = analysisResult.filename; // Assuming filename is also returned
-      setOutput(analysis || 'No analysis returned.');
-    } catch(error) {
-      setOutput('Error analyzing contract: ' + error.toString());
+      const result = await analyseContractAPI(formData);
+      setAnalysis(result.analysis);
+      setConversationHistory([{ role: 'assistant', content: result.analysis }]);
+      setIsChatActive(true);
+    } catch (e) {
+      setError(e.message || 'Failed to analyze the contract.');
+      console.error(e);
     } finally {
       setLoading(false);
     }
   };
 
-  // Optional: Handle download of the analysis result
-  const handleDownload = () => {
-    if (!output) return;
-    const blob = new Blob([output], { type:'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${filename || 'contract_analysis_result'}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const handleChatSubmit = async (prompt) => {
+    setLoading(true);
+    try {
+      const result = await chatWithContractAPI(prompt, conversationHistory);
+      setConversationHistory(prev => [...prev, { role: 'user', content: prompt }, { role: 'assistant', content: result.response }]);
+    } catch (e) {
+      setError(e.message || 'Failed to get a response from the chat.');
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-full text-white page-container-padding">
-      <div className={`w-full max-w-3xl space-y-4 overflow-y-auto ${output ? 'flex-1' : ''}`}>
-        {output && (
-          <div className="bg-[#2a2a2a] p-4 rounded shadow relative">
-            <h3 className="text-lg font-bold mb-2">Contract Analysis Result</h3>
-            {loading ? (
-               <LoadingIndicator text="Analyzing contract..." />
-            ) : (
-               <MarkdownRenderer content={output} />
-            )}
+    <div className="h-full flex flex-col md:flex-row text-white bg-[#0a0a0a] page-container-padding gap-6">
+      {/* Left side: File upload and analysis */}
+      <div className="flex-1 flex flex-col gap-6">
+        {/* Header */}
+        <div className="text-center">
+          <h1 className="text-3xl font-bold mb-2">Contract Analyzer</h1>
+          <p className="text-gray-400">
+            Upload a contract to identify key clauses, potential risks, and obligations.
+          </p>
+        </div>
 
-            {/* Download button - uncomment if download is needed */}
-            {/*
-            <button onClick={handleDownload}
-              className="absolute top-4 right-4 flex items-center gap-1 text-sm custom-button
-                         px-3 py-1 rounded hover:bg-[#a02cd0]">
-              Download
-            </button>
-            */}
-          </div>
-        )}
-        {!submitted && (
-          <div className="text-center text-gray-400 mb-6">
-            <p className="mb-2">Upload a contract document for AI analysis.</p>
-          </div>
-        )}
+        {/* File Uploader */}
+        <div className="flex justify-center">
+          <FileUploader
+            onFileUpload={handleFileAnalysis}
+            uploadButtonText="Analyze Contract"
+            acceptedFileTypes={{
+              'application/pdf': ['.pdf'],
+              'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+            }}
+          />
+        </div>
+
+        {/* Analysis Display */}
+        <div className="flex-1 overflow-y-auto bg-[#1a1a1a] rounded-lg border border-[#333] p-6">
+          {loading && !isChatActive && <LoadingIndicator text={`Analyzing ${fileName}...`} />}
+          {error && <p className="text-red-500 text-center">Error: {error}</p>}
+          
+          {!loading && analysis && (
+            <div>
+              <h2 className="text-2xl font-bold mb-4">Analysis of {fileName}</h2>
+              <MarkdownRenderer content={analysis} />
+            </div>
+          )}
+
+          {!loading && !analysis && !error && (
+            <div className="text-center text-gray-500">
+              <p>Your contract analysis will appear here.</p>
+            </div>
+          )}
+        </div>
       </div>
 
-      <div className={`w-full max-w-3xl mt-4 transition-all ${submitted ? 'mt-auto' : ''}`}>
-        <FileInput onChange={e => setFile(e.target.files[0])} />
-        <button onClick={handleSubmit}
-                disabled={!file || loading}
-                className="mt-2 custom-button px-4 py-2 rounded w-full disabled:opacity-50">
-          {loading ? 'Analyzing...' : 'Analyze Contract'}
-        </button>
-      </div>
+      {/* Right side: Chat interface */}
+      {isChatActive && (
+        <div className="flex-1 flex flex-col bg-[#1a1a1a] rounded-lg border border-[#333]">
+          <div className="p-4 border-b border-[#333]">
+            <h2 className="text-xl font-bold text-center">Chat with your Contract</h2>
+          </div>
+          <ChatInterface
+            messages={conversationHistory}
+            onSendMessage={handleChatSubmit}
+            isLoading={loading}
+            placeholder="Ask questions about the contract..."
+          />
+        </div>
+      )}
     </div>
   );
 }
+
+export default ContractAnalysisInterface;

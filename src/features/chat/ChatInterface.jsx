@@ -50,7 +50,7 @@ export default function ChatInterface() {
       setLoading(false);
     };
 
-    sendToChatAPI(text, onMessage, onDone, onError);
+    sendToChatAPI(userMsg, onMessage, onDone, onError);
   };
 
   const handleSubmit = (e) => {

@@ -1,7 +1,7 @@
 import API_BASE_URL from '../../config';
 
-export async function analyseFileAPI(formData) {
-  const response = await fetch(`${API_BASE_URL}/analyse`, {
+export async function summariseFileAPI(formData) {
+  const response = await fetch(`${API_BASE_URL}/summarize`, {
     method: 'POST',
     body: formData,
   });
