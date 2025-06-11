@@ -26,6 +26,7 @@ import pytesseract
 import subprocess
 import uuid
 from mongo_db import libraryDocsCollection
+from auth import *
 
 # Load environment variables from .env file
 load_dotenv()
@@ -206,78 +207,6 @@ class DraftHandler(BaseCORSHandler):
 
         self.set_header("Content-Type", "application/json")
         self.write({"draft": draft_text})
-
-class SummarizeHandler(BaseCORSHandler):
-    async def post(self):
-        # ensure upload dir
-        if not os.path.exists(UPLOAD_DIR):
-            os.makedirs(UPLOAD_DIR)
-        files = self.request.files.get("file", [])
-        if not files:
-            raise HTTPError(400, "No file uploaded")
-        # just take first
-        fileinfo = files[0]
-        text = get_document_text(fileinfo)
-        # call OpenAI for summarization
-        resp = openai_client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "You are a document summarizer. Provide a concise summary of the text you are given."},
-                {"role": "user",   "content": text},
-            ],
-            temperature=0.3,
-        )
-        summary = resp.choices[0].message.content.strip() # type: ignore
-        self.set_header("Content-Type", "application/json")
-        self.write({"summary": summary})
-
-class ContractAnalysisHandler(BaseCORSHandler):
-    async def post(self):
-        if not os.path.exists(UPLOAD_DIR):
-            os.makedirs(UPLOAD_DIR)
-        files = self.request.files.get("file", [])
-        if not files:
-            raise HTTPError(400, "No file uploaded")
-        fileinfo = files[0]
-        text = get_document_text(fileinfo)
-        resp = openai_client.chat.completions.create(
-            model="gpt-4o",
-            messages=[
-                {"role":"system", "content": (
-                    "You are a contract‐analysis assistant. "
-                    "Identify key clauses, obligations, risks, and action items in the contract."
-                )},
-                {"role":"user",   "content": text}
-            ],
-            temperature=0.5,
-        )
-        analysis = resp.choices[0].message.content.strip() # type: ignore
-        self.set_header("Content-Type", "application/json")
-        self.write({"analysis": analysis})
-
-class ContractChatWebSocketHandler(tornado.websocket.WebSocketHandler):
-    def check_origin(self, origin):
-        return True
-
-    async def on_message(self, message):
-        """
-        Expects: { "messages": [ {role: "system"|"user"|"assistant", content: "..."} , ... ] }
-        Replies: { "reply": "..." }
-        """
-        data = json.loads(message)
-        msgs = data.get("messages", [])
-        if not isinstance(msgs, list):
-            await self.write_message(json.dumps({"error": "Invalid payload"}))
-            return
-
-        resp = openai_client.chat.completions.create(
-            model="gpt-4o",
-            messages=msgs,
-            temperature=0.5
-        )
-        reply = resp.choices[0].message.content.strip() # type: ignore
-        await self.write_message(json.dumps({"reply": reply}))
-
 
 class AnalysisHandler(BaseCORSHandler):
     async def post(self, *args, **kwargs):
@@ -637,15 +566,28 @@ class Application(Application): # type: ignore
             (r"/api/documents", DocumentLibraryHandler),
             (r"/api/uploads/(.*)", StaticFileHandler, {'path': UPLOAD_DIR}),
             (r"/api/upload-drive-document", UploadDriveDocumentHandler),
-            (r"/api/summarize", SummarizeHandler),
-            (r"/api/analyze-contract", ContractAnalysisHandler),
-            (r"/api/ws/contract-chat", ContractChatWebSocketHandler),
+            (r"/api/auth/signin", SignInHandler),
+            (r"/api/auth/signup", SignUpHandler),
+            (r"/api/auth/google/login", GoogleOAuth2LoginHandler),
+            (r"/api/auth/facebook/login", FacebookOAuthHandler),
+            (r"/api/auth/check", AuthCheckHandler),
+            (r"/api/auth/logout", LogoutHandler),
+            (r"/api/auth/profile", UserProfileHandler),
+            (r"/api/auth/update-profile", UpdateProfileHandler),
+            (r"/api/auth/delete-account", DeleteAccountHandler),
+            (r"/api/auth/reset-password", ResetPasswordHandler),
+            (r"/api/auth/change-password", ChangePasswordHandler),
+            (r"/api/auth/oauth/logout", OAuthLogoutHandler),
+            (r"/api/auth/oauth/callback", OAuthCallbackHandler),
+            (r"/api/health", HealthCheckHandler),
+            (r".*", NotFoundHandler)
         ]
         settings = {
             "debug": True,   # reload on change, more verbose errors
             "autoreload": True,
         }
         super().__init__(handlers, **settings)  # type: ignore
+
 
 def run_server(port: int = 4040):
     app = Application()

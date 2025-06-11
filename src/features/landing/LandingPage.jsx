@@ -1,8 +1,71 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { menuStructure } from '../../constants/menuStructure'
 import { starterContent } from '../../constants/starterContent'
+import SignIn from '../../auth/SignIn' // Update path if needed
 
 export default function LandingPage({ onSelect }) {
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [isLoading, setIsLoading] = useState(true)
+
+  useEffect(() => {
+    // Check if user is authenticated
+    const checkAuth = async () => {
+      // Check for token in localStorage
+      const token = localStorage.getItem('authToken')
+
+      if (token) {
+        try {
+          // Validate token with the backend
+          const response = await fetch('/auth/check', {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          })
+
+          if (response.ok) {
+            const data = await response.json()
+            if (data.authenticated) {
+              setIsAuthenticated(true)
+              // Optionally store user info
+              localStorage.setItem('userInfo', JSON.stringify(data.user))
+            } else {
+              // Token is invalid, remove it
+              localStorage.removeItem('authToken')
+              setIsAuthenticated(false)
+            }
+          } else {
+            localStorage.removeItem('authToken')
+            setIsAuthenticated(false)
+          }
+        } catch (error) {
+          console.error('Auth check failed:', error)
+          setIsAuthenticated(false)
+        }
+      } else {
+        setIsAuthenticated(false)
+      }
+
+      setIsLoading(false)
+    }
+
+    checkAuth()
+  }, []) // Removed navigate dependency
+
+  // Show loading state while checking authentication
+  if (isLoading) {
+    return (
+      <div className="h-full flex justify-center items-center text-white">
+        Loading...
+      </div>
+    )
+  }
+
+  // If not authenticated, show the sign-in component
+  if (!isAuthenticated) {
+    return <SignIn />
+  }
+
+  // Otherwise, show the regular landing page content
   return (
     <div className="h-full flex flex-col justify-center items-center text-center text-white page-container-padding">
       <h1 className="text-4xl font-bold mb-4">Welcome to Legal AI Africa</h1>
