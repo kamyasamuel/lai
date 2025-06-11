@@ -19,7 +19,11 @@ body {
 ::-webkit-scrollbar-corner {
     background: #444;
 }
-svg, .text-\[\#8c00cc\] {color: orange; size: 2rem;}
+svg, .text-\[\#8c00cc\] {
+  color: rgb(251 146 60 / var(--tw-text-opacity, 1)); 
+  width: 2rem;
+  height: 2rem;
+}
 textarea {
     resize: none;
 }
@@ -45,13 +49,13 @@ button {
 .flex {display: flex;}
 .custom-button {
     border-radius: 2rem;
-    border: solid 1px orange;
+    border: solid 1px rgb(251 146 60 / var(--tw-text-opacity, 1));
     color: #111;
-    background-color: orange;
+    background-color: rgb(251 146 60 / var(--tw-text-opacity, 1));;
 }
 .custom-button:hover {
   background-color: transparent;
-  color: orange;
+  color: rgb(251 146 60 / var(--tw-text-opacity, 1));;
 }
 .gap-2 {gap: 2rem;}
 .center-items {place-items: center;}

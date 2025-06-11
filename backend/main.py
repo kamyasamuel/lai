@@ -207,6 +207,78 @@ class DraftHandler(BaseCORSHandler):
         self.set_header("Content-Type", "application/json")
         self.write({"draft": draft_text})
 
+class SummarizeHandler(BaseCORSHandler):
+    async def post(self):
+        # ensure upload dir
+        if not os.path.exists(UPLOAD_DIR):
+            os.makedirs(UPLOAD_DIR)
+        files = self.request.files.get("file", [])
+        if not files:
+            raise HTTPError(400, "No file uploaded")
+        # just take first
+        fileinfo = files[0]
+        text = get_document_text(fileinfo)
+        # call OpenAI for summarization
+        resp = openai_client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {"role": "system", "content": "You are a document summarizer. Provide a concise summary of the text you are given."},
+                {"role": "user",   "content": text},
+            ],
+            temperature=0.3,
+        )
+        summary = resp.choices[0].message.content.strip() # type: ignore
+        self.set_header("Content-Type", "application/json")
+        self.write({"summary": summary})
+
+class ContractAnalysisHandler(BaseCORSHandler):
+    async def post(self):
+        if not os.path.exists(UPLOAD_DIR):
+            os.makedirs(UPLOAD_DIR)
+        files = self.request.files.get("file", [])
+        if not files:
+            raise HTTPError(400, "No file uploaded")
+        fileinfo = files[0]
+        text = get_document_text(fileinfo)
+        resp = openai_client.chat.completions.create(
+            model="gpt-4o",
+            messages=[
+                {"role":"system", "content": (
+                    "You are a contract‐analysis assistant. "
+                    "Identify key clauses, obligations, risks, and action items in the contract."
+                )},
+                {"role":"user",   "content": text}
+            ],
+            temperature=0.5,
+        )
+        analysis = resp.choices[0].message.content.strip() # type: ignore
+        self.set_header("Content-Type", "application/json")
+        self.write({"analysis": analysis})
+
+class ContractChatWebSocketHandler(tornado.websocket.WebSocketHandler):
+    def check_origin(self, origin):
+        return True
+
+    async def on_message(self, message):
+        """
+        Expects: { "messages": [ {role: "system"|"user"|"assistant", content: "..."} , ... ] }
+        Replies: { "reply": "..." }
+        """
+        data = json.loads(message)
+        msgs = data.get("messages", [])
+        if not isinstance(msgs, list):
+            await self.write_message(json.dumps({"error": "Invalid payload"}))
+            return
+
+        resp = openai_client.chat.completions.create(
+            model="gpt-4o",
+            messages=msgs,
+            temperature=0.5
+        )
+        reply = resp.choices[0].message.content.strip() # type: ignore
+        await self.write_message(json.dumps({"reply": reply}))
+
+
 class AnalysisHandler(BaseCORSHandler):
     async def post(self, *args, **kwargs):
          # Check if the upload directory exists, create if not
@@ -371,7 +443,7 @@ class UploadDriveDocumentHandler(BaseCORSHandler):
         except Exception as e:
             logging.error(f"Error uploading document: {e}", exc_info=True)
             raise HTTPError(500, f"Failed to upload document: {e}")
-
+            
 class DocumentComparisonHandler(BaseCORSHandler):
     async def post(self):
         try:
@@ -385,7 +457,7 @@ class DocumentComparisonHandler(BaseCORSHandler):
 
             # Extract text content from files
             doc1_content = get_document_text(doc1_file_data)
-            doc2_content = get_document_text(doc2_file_data) 
+            doc2_content = get_document_text(doc2_file_data)
 
             # Use OpenAI API to compare documents
             comparison_response = openai_client.chat.completions.create(
@@ -552,7 +624,7 @@ For diagrams and graphs, use Mermaid syntax inside a 'mermaid' code block (e.g.,
         except Exception as e:
             logging.error(f"Agentic search error: {e}", exc_info=True)
             await self.write_message(json.dumps({"error": f"An error occurred: {e}"}))
-            
+
 class Application(Application): # type: ignore
     def __init__(self):
         handlers = [
@@ -565,13 +637,15 @@ class Application(Application): # type: ignore
             (r"/api/documents", DocumentLibraryHandler),
             (r"/api/uploads/(.*)", StaticFileHandler, {'path': UPLOAD_DIR}),
             (r"/api/upload-drive-document", UploadDriveDocumentHandler),
+            (r"/api/summarize", SummarizeHandler),
+            (r"/api/analyze-contract", ContractAnalysisHandler),
+            (r"/api/ws/contract-chat", ContractChatWebSocketHandler),
         ]
         settings = {
             "debug": True,   # reload on change, more verbose errors
             "autoreload": True,
         }
         super().__init__(handlers, **settings)  # type: ignore
-
 
 def run_server(port: int = 4040):
     app = Application()

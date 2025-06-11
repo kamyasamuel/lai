@@ -52,13 +52,13 @@ export default function QueryInterface({ title }) {
 
   const searchBar = (
     <div className="flex gap-2 center-items w-full max-w-2xl">
-      <input
-        value={query}
-        onChange={e=>setQuery(e.target.value)}
-        onKeyDown={e=>e.key==='Enter'&&handleSearch()}
-        className="flex-1 p-3 br-2 rounded-l bg-[#111] text-white border border-[#333]"
-        placeholder={`Search ${title.toLowerCase()}...`}
-      />
+        <input
+          value={query}
+          onChange={e=>setQuery(e.target.value)}
+          onKeyDown={e=>e.key==='Enter'&&handleSearch()}
+          className="flex-1 p-3 br-2 rounded-l bg-[#111] text-white border border-[#333]"
+          placeholder={`Search ${title.toLowerCase()}...`}
+        />
       <Search onClick={()=>handleSearch()} className='hover-cursor scale-1' />
     </div>
   );
@@ -73,7 +73,7 @@ export default function QueryInterface({ title }) {
             <p className="text-gray-400 text-sm mb-4">
               Use AI to explore {title.toLowerCase()} across jurisdictions.
             </p>
-          </div>
+      </div>
         )}
 
         {/* Display up to last 3 results */}
@@ -84,24 +84,24 @@ export default function QueryInterface({ title }) {
               {entry.data?.length > 0 ? (
                 entry.data.map((r, i) => (
                   <div key={i} className="mb-4 last:mb-0 p-3 rounded bg-[#1a1a1a]">
-                    <h4 className="text-md font-semibold mb-1">
-                      {r.title}
-                      {r.jurisdiction && r.year && (
-                        <span className="text-xs text-gray-400">
-                          ({r.jurisdiction}, {r.year})
-                        </span>
-                      )}
-                    </h4>
+            <h4 className="text-md font-semibold mb-1">
+              {r.title}
+              {r.jurisdiction && r.year && (
+                <span className="text-xs text-gray-400">
+                  ({r.jurisdiction}, {r.year})
+                </span>
+              )}
+            </h4>
                     <div className="text-sm text-gray-300 mb-2">
                       <MarkdownRenderer content={r.snippet} />
                     </div>
                     {r.link && r.link !== '#' && (
                       <a href={r.link} target="_blank" rel="noopener noreferrer"
                          className="text-sm text-orange-400 underline">
-                        View Source
-                      </a>
-                    )}
-                  </div>
+                View Source
+              </a>
+            )}
+          </div>
                 ))
               ) : (
                 <p className="text-gray-400">No results found for this query.</p>

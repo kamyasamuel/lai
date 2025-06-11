@@ -75,13 +75,13 @@ export default function MyDriveInterface() {
           Upload Documents
         </h3>
         <FileInput onChange={e => setFileToUpload(e.target.files[0])} />
-        <button
+          <button
           onClick={handleFileUpload}
           disabled={!fileToUpload || uploading}
           className="mt-4 custom-button px-6 py-2 rounded text-white disabled:opacity-50"
-        >
+          >
           {uploading ? 'Uploading...' : 'Upload to Drive'}
-        </button>
+          </button>
         {uploadStatus && <p className="mt-2 text-sm text-gray-300">{uploadStatus}</p>}
       </div>
 
