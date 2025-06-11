@@ -2,42 +2,21 @@ import os
 import json
 import secrets
 import hashlib
-import tornado.web
+import time
 from datetime import datetime, timedelta
+import tornado
 from tornado.web import RequestHandler, HTTPError
-from tornado.auth import GoogleOAuth2Mixin, FacebookGraphMixin
-
-
+import tornado.auth
+from main import BaseCORSHandler # type: ignore
 # In a real app, use a database. This is just for demonstration.
 users = {}
 sessions = {}
 
-# Initialize OAuth registry
+# Create OAuth instance and register providers
+
 default_host = "http://localhost:4040" if os.getenv("ENV") == "DEV" else "https://lawyers.legalaiafrica.com"
 
-class BaseCORSHandler(tornado.web.RequestHandler):
-    def set_default_headers(self):
-        # Allow React dev server
-        allowed_origin = self.request.headers.get("Origin")
-        allowed_origins = [
-            "https://lawyers.legalaiafrica.com",
-            "http://localhost:5173",
-            "http://localhost:3000"
-        ]
-
-        if allowed_origin and allowed_origin in allowed_origins:
-            self.set_header("Access-Control-Allow-Origin", allowed_origin)
-
-        self.set_header("Access-Control-Allow-Credentials", "true")
-        self.set_header("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
-        self.set_header(
-            "Access-Control-Allow-Headers",
-            "Content-Type, Access-Control-Allow-Origin, Authorization"
-        )
-
-    def options(self):
-        self.set_status(204)
-        self.finish()
+# Configure OAuth providers as before
 
 class SignInHandler(BaseCORSHandler):
     def post(self):
@@ -71,15 +50,18 @@ class SignInHandler(BaseCORSHandler):
             self.write({"message": "Invalid email or password"})
             return
 
-        # Create session token
+        # Create session token with expiry
         token = secrets.token_hex(32)
+        expires_at = int((datetime.now() + timedelta(days=1)).timestamp() * 1000)  # 24 hours from now
+        
         sessions[token] = {
             "user_id": email,
-            "expires": datetime.now() + timedelta(days=7)
+            "expires_at": expires_at
         }
 
         self.write({
             "token": token,
+            "expiresAt": expires_at,  # Send expiry time to client
             "email": email,
             "name": user.get("name", "")
         })
@@ -117,19 +99,22 @@ class SignUpHandler(BaseCORSHandler):
             "created_at": datetime.now().isoformat()
         }
 
-        # Create session token
+        # Create session token with expiry
         token = secrets.token_hex(32)
+        expires_at = int((datetime.now() + timedelta(days=1)).timestamp() * 1000)  # 24 hours from now
+        
         sessions[token] = {
             "user_id": email,
-            "expires": datetime.now() + timedelta(days=7)
+            "expires_at": expires_at
         }
 
         self.write({
             "token": token,
+            "expiresAt": expires_at,  # Send expiry time to client
             "email": email
         })
 
-class GoogleOAuth2LoginHandler(BaseCORSHandler, GoogleOAuth2Mixin):
+class GoogleOAuth2LoginHandler(BaseCORSHandler, tornado.auth.GoogleOAuth2Mixin):
     async def get(self):
         redirect_uri = self.application.settings.get('google_redirect_base_uri', default_host + "/auth/google/callback")
         if self.get_argument('code', None):
@@ -153,9 +138,11 @@ class GoogleOAuth2LoginHandler(BaseCORSHandler, GoogleOAuth2Mixin):
                     "provider": "google"
                 }
             token = secrets.token_hex(32)
+            expires_at = int((datetime.now() + timedelta(days=1)).timestamp() * 1000)  # 24 hours from now
+            
             sessions[token] = {
                 "user_id": email,
-                "expires": datetime.now() + timedelta(days=7)
+                "expires_at": expires_at
             }
             self.redirect(f"/#/dashboard?token={token}")
         else:
@@ -167,7 +154,7 @@ class GoogleOAuth2LoginHandler(BaseCORSHandler, GoogleOAuth2Mixin):
                 extra_params={'approval_prompt': 'auto'}
             )
 
-class FacebookOAuthHandler(BaseCORSHandler, FacebookGraphMixin):
+class FacebookOAuthHandler(BaseCORSHandler, tornado.auth.FacebookGraphMixin):
     async def get(self):
         redirect_uri = self.application.settings.get('facebook_redirect_base_uri', default_host + "/auth/facebook/callback")
         if self.get_argument("code", None):
@@ -193,9 +180,11 @@ class FacebookOAuthHandler(BaseCORSHandler, FacebookGraphMixin):
                     "provider": "facebook"
                 }
             token = secrets.token_hex(32)
+            expires_at = int((datetime.now() + timedelta(days=1)).timestamp() * 1000)  # 24 hours from now
+            
             sessions[token] = {
                 "user_id": email,
-                "expires": datetime.now() + timedelta(days=7)
+                "expires_at": expires_at
             }
             self.redirect(f"/#/dashboard?token={token}")
         else:
@@ -216,7 +205,9 @@ class AuthCheckHandler(BaseCORSHandler):
             return
         
         session = sessions[token]
-        if datetime.now() > session["expires"]:
+        current_time = int(datetime.now().timestamp() * 1000)
+        
+        if current_time > session["expires_at"]:
             # Session expired
             del sessions[token]
             self.set_status(401)

@@ -12,13 +12,15 @@ import tornado
 import tornado.escape
 from dotenv import load_dotenv
 from googleapiclient.discovery import build
-import tornado.websocket
+import tornado
 from docx import Document
 import PyPDF2
 import glob  # Import the glob module
 from urllib.parse import urlparse, parse_qs
 import requests
 from bs4 import BeautifulSoup
+import tornado.websocket
+from auth import *
 from vector_db import Memory
 from pdf2image import convert_from_bytes
 import cv2

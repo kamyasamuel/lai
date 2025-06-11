@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import API_BASE_URL from '../config';
 
 export default function SignIn() {
   const [email, setEmail] = useState('');
@@ -13,7 +14,7 @@ export default function SignIn() {
       setIsLoading(true);
       setError('');
       
-      const response = await fetch('/api/auth/signin', {
+      const response = await fetch(`${API_BASE_URL}/auth/signin`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -27,8 +28,11 @@ export default function SignIn() {
         throw new Error(data.message || 'Sign in failed');
       }
       
-      // Store the auth token
+      // Store the auth token and its expiry time
       localStorage.setItem('authToken', data.token);
+      // Set expiry to 24 hours from now if not provided by backend
+      const expiryTime = data.expiresAt || (new Date().getTime() + 24 * 60 * 60 * 1000);
+      localStorage.setItem('tokenExpiry', expiryTime.toString());
       
       // Reload the page to enter authenticated state
       window.location.reload();
@@ -46,7 +50,7 @@ export default function SignIn() {
       setIsLoading(true);
       setError('');
       
-      const response = await fetch('/api/auth/signup', {
+      const response = await fetch(`${API_BASE_URL}/auth/signup`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -60,8 +64,11 @@ export default function SignIn() {
         throw new Error(data.message || 'Sign up failed');
       }
       
-      // Store the auth token
+      // Store the auth token and its expiry time
       localStorage.setItem('authToken', data.token);
+      // Set expiry to 24 hours from now if not provided by backend
+      const expiryTime = data.expiresAt || (new Date().getTime() + 24 * 60 * 60 * 1000);
+      localStorage.setItem('tokenExpiry', expiryTime.toString());
       
       // Reload the page to enter authenticated state
       window.location.reload();
@@ -71,6 +78,9 @@ export default function SignIn() {
       setIsLoading(false);
     }
   };
+
+  // Create base URL for OAuth redirects
+  const baseUrl = API_BASE_URL.replace('/api', '');
 
   return (
     <div className="h-full flex flex-col justify-center items-center text-white bg-black">
@@ -82,14 +92,14 @@ export default function SignIn() {
         {/* Social authentication buttons */}
         <div className="space-y-3 mb-4">
           <button 
-            onClick={() => window.location.href = "/api/auth/google/login"}
+            onClick={() => window.location.href = `${baseUrl}/auth/google/login`}
             className="w-full py-2 px-4 bg-white text-black rounded flex items-center justify-center"
           >
             <span>Continue with Google</span>
           </button>
           
           <button 
-            onClick={() => window.location.href = "/api/auth/facebook/login"}
+            onClick={() => window.location.href = `${baseUrl}/auth/facebook/login`}
             className="w-full py-2 px-4 bg-[#1877f2] rounded flex items-center justify-center"
           >
             <span>Continue with Facebook</span>
@@ -122,7 +132,7 @@ export default function SignIn() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Password"
-              className="w-full p-2 bg-[#222] rounded border border-[#333]"
+              className="w-full p-2 bg-[#222] rounded-lg border border-[#333]"
               required
             />
           </div>
@@ -132,7 +142,7 @@ export default function SignIn() {
               type="button"
               onClick={handleEmailSignIn}
               disabled={isLoading}
-              className="flex-1 py-2 px-4 bg-[#8c00cc] rounded disabled:opacity-50"
+              className="flex-1 py-2 px-4 custom-button disabled:opacity-50"
             >
               {isLoading ? 'Please wait...' : 'Sign In'}
             </button>
