@@ -323,11 +323,11 @@ class ChatWebSocketHandler(tornado.websocket.WebSocketHandler):
             
             # System prompt for all clients
             system_prompt = """You are a chat agent for Legal Ai Africa.
-                     Format your output into paragraphs.
-                     For mathematical formulas, use KaTeX syntax (e.g., $$...$$ for block and $...$ for inline).
-                     For diagrams and graphs, use Mermaid syntax inside a 'mermaid' code block 
-                     (e.g., ```mermaid\ngraph TD;\nA-->B;\n```).
-                    """
+                Format your output into paragraphs.
+                For mathematical formulas, use KaTeX syntax (e.g., $$...$$ for block and $...$ for inline).
+                For diagrams and graphs, use Mermaid syntax inside a 'mermaid' code block 
+                (e.g., ```mermaid\ngraph TD;\nA-->B;\n```).
+            """
             
             # First try Gemini
             try:
