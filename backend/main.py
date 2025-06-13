@@ -78,16 +78,65 @@ async def generate_draft(prompt: str) -> str:
         }
     ]
 
-    # call the OpenAI chat completion endpoint
-    response = openai_client.chat.completions.create(
-        model="gpt-4o",
-        messages=messages, # type: ignore
-        temperature=0.2,      # lower = more precise/legal
-        max_tokens=1500       # adjust to taste
-    )
-
-    # extract the assistant's reply
-    draft_text = response.choices[0].message.content.strip() # type: ignore
+    # Try multiple clients for redundancy
+    error_messages = []
+    draft_text = None
+    
+    # Try OpenAI first
+    try:
+        response = openai_client.chat.completions.create(
+            model="gpt-4o",
+            messages=messages, # type: ignore
+            temperature=0.2,      # lower = more precise/legal
+            max_tokens=1500       # adjust to taste
+        )
+        draft_text = response.choices[0].message.content.strip() # type: ignore
+    except Exception as e:
+        error_messages.append(f"OpenAI failed: {e}")
+    
+    # Try Gemini if OpenAI failed
+    if draft_text is None:
+        try:
+            response = gemmini_client.chat.completions.create(
+                model="gemini-2.5-flash-preview-05-20",
+                messages=messages, # type: ignore
+                temperature=0.2,
+                max_tokens=1500
+            )
+            draft_text = response.choices[0].message.content.strip() # type: ignore
+        except Exception as e:
+            error_messages.append(f"Gemini failed: {e}")
+    
+    # Try Groq if Gemini failed
+    if draft_text is None:
+        try:
+            response = groq_client.chat.completions.create(
+                model="llama3-70b-8192",
+                messages=messages, # type: ignore
+                temperature=0.2,
+                max_tokens=1500
+            )
+            draft_text = response.choices[0].message.content.strip() # type: ignore
+        except Exception as e:
+            error_messages.append(f"Groq failed: {e}")
+    
+    # Try DeepSeek as last resort
+    if draft_text is None:
+        try:
+            response = deepseek_client.chat.completions.create(
+                model="deepseek-chat",
+                messages=messages, # type: ignore
+                temperature=0.2,
+                max_tokens=1500
+            )
+            draft_text = response.choices[0].message.content.strip() # type: ignore
+        except Exception as e:
+            error_messages.append(f"DeepSeek failed: {e}")
+    
+    # If all providers failed, raise an exception
+    if draft_text is None:
+        raise Exception(f"All draft generation providers failed: {' | '.join(error_messages)}")
+    
     return draft_text
 
 def get_document_text(file_data) -> str:
@@ -525,7 +574,7 @@ class DocumentLibraryHandler(BaseCORSHandler):
     async def get(self):
         try:
             # Get the search term from the query string
-            uri = self.request.uri or ""
+            uri = str(self.request.uri or "")
             parsed_url = urlparse(uri)
             query = parsed_url.query or ""
             query_params = parse_qs(query)
