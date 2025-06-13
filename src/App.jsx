@@ -1,5 +1,5 @@
 import React, { useState, lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Sidebar from './components/Sidebar'
 import LandingPage from './features/landing/LandingPage'
 import ChatInterface from './features/chat/ChatInterface'
