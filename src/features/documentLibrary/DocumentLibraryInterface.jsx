@@ -109,7 +109,7 @@ function DocumentLibraryInterface() {
                         <div className="w-1/5 text-center text-gray-500"></div>
                         <div className="w-1/5 flex justify-end items-center gap-1">
                            <a
-                            href={doc.url}
+                            href={`${API_BASE_URL}${doc.url}`}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center p-1.5 text-sm bg-[#333] hover:bg-orange-600 rounded-md"

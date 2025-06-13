@@ -21,7 +21,7 @@ export default function OAuthCallback() {
       
       try {
         // Validate token with backend
-        const response = await fetch(`${API_BASE_URL}/api/auth/check`, {
+        const response = await fetch(`${API_BASE_URL}/auth/check`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`
@@ -42,7 +42,8 @@ export default function OAuthCallback() {
         localStorage.setItem('isAuthenticated', 'true');
         
         // Navigate to dashboard
-        navigate('/dashboard');
+        window.location.replace('/home');
+        
       } catch (err) {
         setError(`Authentication failed: ${err.message}`);
       }

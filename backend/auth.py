@@ -303,7 +303,10 @@ class FacebookOAuthHandler(BaseCORSHandler, tornado.auth.FacebookGraphMixin):
                 "created_at": datetime.now().isoformat()
             })
             
-            self.redirect(f"/#/dashboard?token={token}")
+            # Instead of redirecting to /#/dashboard with token in URL
+            # Redirect to frontend callback route with token as query parameter
+            frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
+            self.redirect(f"{frontend_url}/auth/callback?token={token}")
         else:
             self.authorize_redirect(
                 redirect_uri=redirect_uri,

@@ -91,15 +91,14 @@ export default function App() {
           open={sidebarOpen}
           toggle={() => setSidebarOpen(!sidebarOpen)}
         />
-        <main className="flex-1 overflow-auto">{renderFeature()}</main>
+        <main className="flex-1 overflow-auto flex items-center justify-center">{renderFeature()}</main>
       </div>
       <Routes>
         {/* Existing routes */}
         <Route path="/signin" element={<SignIn />} />
-        
+
         {/* OAuth callback route */}
         <Route path="/auth/callback" element={<OAuthCallback />} />
-        
         {/* Other routes */}
       </Routes>
     </BrowserRouter>

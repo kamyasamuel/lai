@@ -77,27 +77,30 @@ export default function DraftingInterface() {
           </div>
 
           <div className="p-4 flex items-center gap-4">
-            <textarea
-              className="flex-1 p-2 rounded bg-[#111] text-white border border-[#333]"
+            <input
+              className="flex-1 p-2 rounded bg-[#111] text-white border border-[#444] focus:border-[--tw-bg-color] focus:outline-none"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              rows={2}
+              placeholder='Enter a new prompt to regenerate draft...'
+              rows={1}
+              type="text"
+              title="Enter a new prompt to regenerate the draft"
             />
             <button
               onClick={handleGenerate}
               disabled={loading}
-              className="border border-[--tw-bg-color] border:hover-[#222] px-4 py-2 rounded disabled:opacity-50 flex items-center"
+              className="px-4 py-2 rounded disabled:opacity-50 flex items-center"
             >
               <RefreshCw size={18} className={`mr-2 ${loading ? 'animate-spin' : ''}`} />
-              {loading ? 'Generating…' : 'Regenerate'}
+              {/*loading ? 'Generating…' : 'Regenerate'*/}
             </button>
             <button
               onClick={handleCopy}
-              className="border border-[--tw-bg-color] border:hover-[#222] px-4 py-2 rounded flex items-center gap-2"
+              className="px-4 py-2 rounded flex items-center gap-2"
               title="Copy to clipboard for pasting into a Word document"
             >
               {copied ? <Check size={18} className="mr-2" /> : <Copy size={18} className="mr-2" />}
-              {copied ? 'Copied!' : 'Copy'}
+              {/*copied ? 'Copied!' : 'Copy'*/}
             </button>
           </div>
         </div>

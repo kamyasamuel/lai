@@ -58,7 +58,7 @@ export default function Sidebar({
         </button>
       </div>
 
-      <nav className="flex-1 overflow-y-auto p-1 bg-[#000]">
+      <nav className="flex-1 overflow-y-auto p-1 bg-[#000] place-content-center">
         {/* Home button */}
         <div className="mb-2">
           <button
@@ -66,7 +66,7 @@ export default function Sidebar({
             {...(!isAuthenticated && { disabled: true })}
             className={`flex items-center w-full text-left p-1 rounded hover:bg-[#222] text-white ${
               activeFeature === 'Dashboard' ? 'bg-[#222]' : ''
-            } ${!open ? 'justify-center' : ''} ${
+            } ${!open ? 'justify-center' : 'justify-center'} ${
               !isAuthenticated ? 'opacity-50 cursor-not-allowed' : ''
             }`}
             title="Home"
@@ -103,7 +103,7 @@ export default function Sidebar({
                       {...(!isAuthenticated && { disabled: true })}
                       className={`flex items-center w-full text-left p-1 rounded hover:bg-[#222] text-white ${
                         activeFeature === name ? 'bg-[#222]' : ''
-                      } ${!open ? 'justify-center' : ''} ${
+                      } ${!open ? 'justify-center' : 'justify-center'} ${
                         !isAuthenticated
                           ? 'opacity-50 cursor-not-allowed'
                           : ''
