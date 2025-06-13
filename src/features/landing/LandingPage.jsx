@@ -39,10 +39,11 @@ export default function LandingPage({ onSelect }) {
             if (data.authenticated) {
               setIsAuthenticated(true)
               setUser(data.user)
+              // Store authentication state for other components
+              localStorage.setItem('isAuthenticated', 'true')
               // Optionally store user info
               localStorage.setItem('userInfo', JSON.stringify(data.user))
             } else {
-              // Token is invalid, remove it
               handleSignOut()
             }
           } else {
@@ -66,8 +67,13 @@ export default function LandingPage({ onSelect }) {
     localStorage.removeItem('authToken')
     localStorage.removeItem('tokenExpiry')
     localStorage.removeItem('userInfo')
+    localStorage.removeItem('isAuthenticated')
+    localStorage.removeItem('token') // Add this line to match what Sidebar is checking
     setIsAuthenticated(false)
     setUser(null)
+    
+    // Trigger storage event for other components (like Sidebar) to react
+    window.dispatchEvent(new Event('storage'))
   }
 
   // Show loading state while checking authentication
@@ -88,12 +94,12 @@ export default function LandingPage({ onSelect }) {
   return (
     <div className="h-full flex flex-col justify-center items-center text-center text-white page-container-padding">
       <div className="absolute top-4 right-4 flex items-center">
-        <span className="mr-4">Welcome, {user?.name || 'User'}</span>
+        <span className="mr-4">Welcome {user?.name || ''}</span>
         <button
           onClick={handleSignOut}
-          className="px-4 py-2 bg-[#333] rounded hover:bg-[#444]"
+          className="px-4 py-2 custom-button"
         >
-          Sign Out
+          Log Out
         </button>
       </div>
 
@@ -108,7 +114,7 @@ export default function LandingPage({ onSelect }) {
             <button
               key={name}
               onClick={() => onSelect(name)}
-              className="border border-[#333] rounded p-4 flex flex-col items-center
+              className="border border-[#333] bg-[#111] rounded p-4 flex flex-col items-center
                          text-center shadow-md hover:bg-[#2a2a2a]"
             >
               <Icon size={32} className="mb-2 text-[#8c00cc]" />

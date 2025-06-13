@@ -1,9 +1,12 @@
 import API_BASE_URL from '../../config';
 
-export async function uploadDriveDocumentAPI(formData) {
+export async function uploadDriveDocumentAPI(formData, token) {
   try {
-    const res = await fetch(`${API_BASE_URL}/upload-drive-document`, {
+    const res = await fetch(`${API_BASE_URL}/upload-user-document`, {
       method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${token}`
+      },
       body: formData,
     });
     if (!res.ok) {
@@ -16,4 +19,4 @@ export async function uploadDriveDocumentAPI(formData) {
     console.error('Exception in uploadDriveDocumentAPI:', error);
     throw new Error('An error occurred while uploading document to drive.');
   }
-} 
+}

@@ -1,4 +1,3 @@
-# server.py
 import logging
 import sys
 import json
@@ -16,7 +15,7 @@ import tornado
 from docx import Document
 import PyPDF2
 import glob  # Import the glob module
-from urllib.parse import urlparse, parse_qs
+from urllib.parse import urlparse, parse_qs, unquote
 import requests
 from bs4 import BeautifulSoup
 import tornado.websocket
@@ -29,6 +28,10 @@ import subprocess
 import uuid
 from mongo_db import libraryDocsCollection
 from auth import *
+from base_handler import BaseCORSHandler
+from mongo_db import userDocumentsCollection, sessionsCollection
+import secrets
+from datetime import datetime
 
 # Load environment variables from .env file
 load_dotenv()
@@ -110,87 +113,69 @@ def get_document_text(file_data) -> str:
         byte_stream = BytesIO(file_body)
         try:
             # Use PdfReader from PyPDF2
+            temporary_text = ""
             reader = PyPDF2.PdfReader(byte_stream)
             for page_num in range(len(reader.pages)):
-                text += reader.pages[page_num].extract_text() + ' '
-        except Exception as e:
-            store_folder = "./tmp"
-            images = convert_from_bytes(file_body)
-            for img in images:
-                # Save pages as images in the pdf
-                img.save(f'{store_folder}/page'+ str(images.index(img)) +'.jpg', 'JPEG')
+                temporary_text += reader.pages[page_num].extract_text() + ' '
             
-            img_list = os.listdir(f"{store_folder}")
-            img_list.sort()
-            text = ""
-            for i in range(len(img_list)):
-                img = cv2.imread(f"{store_folder}/{img_list[i]}")
-                gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-        
-                # Performing OTSU threshold
-                ret, thresh1 = cv2.threshold(gray, 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)
+            if any(c.isalpha() or c.isdigit() for c in temporary_text):
+                text += temporary_text
+            else:
+                # If PyPDF2 fails, try converting to images and using OCR
+                # Ensure the 'tmp' folder exists in the parent folder of this script
+                parent_folder = os.path.dirname(os.path.abspath(__file__))
+                store_folder = os.path.join(parent_folder, "tmp")
+                os.makedirs(store_folder, exist_ok=True)
+
+                images = convert_from_bytes(file_body)
+                for idx, img in enumerate(images):
+                    img.save(os.path.join(store_folder, f'page{idx}.jpg'), 'JPEG')
                 
-                # Specify structure shape and kernel size. 
-                # Kernel size increases or decreases the area 
-                # of the rectangle to be detected.
-                # A smaller value like (10, 10) will detect 
-                # each word instead of a sentence.
-                rect_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (18, 18))
-                
-                # Applying dilation on the threshold image
-                dilation = cv2.dilate(thresh1, rect_kernel, iterations = 1)
-                
-                # Finding contours
-                contours, hierarchy = cv2.findContours(dilation, cv2.RETR_EXTERNAL, 
-                                                                cv2.CHAIN_APPROX_NONE)
-                
-                # Creating a copy of image
-                im2 = img.copy()
-                
-                for cnt in contours:
-                    x, y, w, h = cv2.boundingRect(cnt)
+                img_list = os.listdir(store_folder)
+                img_list.sort()
+                for i in range(len(img_list)):
+                    img = cv2.imread(f"{store_folder}/{img_list[i]}")
+                    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+            
+                    # Performing OTSU threshold
+                    ret, thresh1 = cv2.threshold(gray, 0, 255, cv2.THRESH_OTSU | cv2.THRESH_BINARY_INV)
                     
-                    # Drawing a rectangle on copied image
-                    rect = cv2.rectangle(im2, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                    # Specify structure shape and kernel size. 
+                    # Kernel size increases or decreases the area 
+                    # of the rectangle to be detected.
+                    # A smaller value like (10, 10) will detect 
+                    # each word instead of a sentence.
+                    rect_kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (18, 18))
                     
-                    # Cropping the text block for giving input to OCR
-                    cropped = im2[y:y + h, x:x + w]
-                    text += pytesseract.image_to_string(cropped)    
-            try:    
-                for i in img_list:  subprocess.run(["rm", f"{store_folder}/{i}"])
-            except: ...
-            return text
-        except:
+                    # Applying dilation on the threshold image
+                    dilation = cv2.dilate(thresh1, rect_kernel, iterations = 1)
+                    
+                    # Finding contours
+                    contours, hierarchy = cv2.findContours(dilation, cv2.RETR_EXTERNAL, 
+                                                                    cv2.CHAIN_APPROX_NONE)
+                    
+                    # Creating a copy of image
+                    im2 = img.copy()
+                    
+                    for cnt in contours:
+                        x, y, w, h = cv2.boundingRect(cnt)
+                        
+                        # Drawing a rectangle on copied image
+                        rect = cv2.rectangle(im2, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                        
+                        # Cropping the text block for giving input to OCR
+                        cropped = im2[y:y + h, x:x + w]
+                        text += pytesseract.image_to_string(cropped)    
+                try:    
+                    for i in img_list:  subprocess.run(["rm", f"{store_folder}/{i}"])
+                except: ...
+        except Exception as e:
+            print(f"Error reading PDF file {filename}: {e}")
             raise HTTPError(400, f"Could not read PDF file {filename}.")
     else:
         raise HTTPError(400, f"Unsupported file type: {filename}. Only .docx and .pdf are supported.")
 
     return text
-
-class BaseCORSHandler(tornado.web.RequestHandler):
-    def set_default_headers(self):
-        # Allow React dev server on port 5173
-        allowed_origin = self.request.headers.get("Origin")
-        allowed_origins = [
-            "https://lawyers.legalaiafrica.com",
-            "http://localhost:5173",
-            "http://localhost:3000"
-        ]
-
-        if allowed_origin and allowed_origin in allowed_origins:
-            self.set_header("Access-Control-Allow-Origin", allowed_origin)
-
-        self.set_header("Access-Control-Allow-Credentials", "true")
-        self.set_header("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
-        self.set_header(
-            "Access-Control-Allow-Headers",
-            "Content-Type, Access-Control-Allow-Origin, Authorization"
-        )
-
-    def options(self):
-        # No body for preflight `OPTIONS` requests
-        self.set_status(204)
-        self.finish()
 
 class DraftHandler(BaseCORSHandler):
     async def post(self):
@@ -237,19 +222,77 @@ class AnalysisHandler(BaseCORSHandler):
             text = get_document_text(file_info)
 
             # Generate summary
-            analysis = openai_client.chat.completions.create(
-                model="gpt-4o",
-                messages=[
-                    {"role":"system", "content":"""You are an analysis agent. You analyze documents for major key points and take-aways.
-                     Format your output as Markdown. Use headings, tables, lists, etc. where possible.
-                     For mathematical formulas, use KaTeX syntax (e.g., $$...$$ for block and $...$ for inline).
-                     For diagrams and graphs, use Mermaid syntax inside a 'mermaid' code block (e.g., ```mermaid\ngraph TD;\nA-->B;\n```).
-                    """},
-                    {"role":"user", "content":f"Analyse the following document: {text}"}
-                ],
-                temperature=0.5,
-                top_p=1
-            )
+            # Try OpenAI first, then fallback to other clients if it fails
+            analysis = None
+            error_messages = []
+            system_prompt = """You are an analysis agent. You analyze documents for major key points and take-aways.
+                 Format your output as Markdown. Use headings, tables, lists, etc. where possible.
+                 For mathematical formulas, use KaTeX syntax (e.g., $$...$$ for block and $...$ for inline).
+                 For diagrams and graphs, use Mermaid syntax inside a 'mermaid' code block (e.g., ```mermaid\ngraph TD;\nA-->B;\n```).
+            """
+            user_prompt = f"Analyse the following document: {text}"
+
+            # Try OpenAI
+            try:
+                analysis = openai_client.chat.completions.create(
+                    model="gpt-4o",
+                    messages=[
+                        {"role": "system", "content": system_prompt},
+                        {"role": "user", "content": user_prompt}
+                    ],
+                    temperature=0.5,
+                    top_p=1
+                )
+            except Exception as e:
+                error_messages.append(f"OpenAI failed: {e}")
+
+            # Try Gemini if OpenAI failed
+            if analysis is None:
+                try:
+                    analysis = gemmini_client.chat.completions.create(
+                        model="gemini-2.5-flash-preview-05-20",
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_prompt}
+                        ],
+                        temperature=0.5,
+                        top_p=1
+                    )
+                except Exception as e:
+                    error_messages.append(f"Gemini failed: {e}")
+
+            # Try Groq if Gemini failed
+            if analysis is None:
+                try:
+                    analysis = groq_client.chat.completions.create(
+                        model="llama3-70b-8192",
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_prompt}
+                        ],
+                        temperature=0.5,
+                        top_p=1
+                    )
+                except Exception as e:
+                    error_messages.append(f"Groq failed: {e}")
+
+            # Try DeepSeek if Groq failed
+            if analysis is None:
+                try:
+                    analysis = deepseek_client.chat.completions.create(
+                        model="deepseek-chat",
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": user_prompt}
+                        ],
+                        temperature=0.5,
+                        top_p=1
+                    )
+                except Exception as e:
+                    error_messages.append(f"DeepSeek failed: {e}")
+
+            if analysis is None:
+                raise HTTPError(500, f"All analysis providers failed: {' | '.join(error_messages)}")
         self.write(json.dumps({'summary': analysis.choices[0].message.content, 'filename':filename})) # type: ignore
 
 class ChatWebSocketHandler(tornado.websocket.WebSocketHandler):
@@ -274,19 +317,79 @@ class ChatWebSocketHandler(tornado.websocket.WebSocketHandler):
                 await self.write_message(json.dumps({"error":"Missing prompt"}))
                 return
 
-            # Stream chunks from OpenAI
-            request = openai_client.chat.completions.create(
-                model="gpt-4o-mini",
-                stream=True,
-                messages=[
-                    {"role":"system", "content":"""You are a chat agent for Legal Ai Africa.
+            # Try each client in sequence for redundancy, starting with Gemini
+            error_messages = []
+            request = None
+            
+            # System prompt for all clients
+            system_prompt = """You are a chat agent for Legal Ai Africa.
                      Format your output into paragraphs.
                      For mathematical formulas, use KaTeX syntax (e.g., $$...$$ for block and $...$ for inline).
-                     For diagrams and graphs, use Mermaid syntax inside a 'mermaid' code block (e.g., ```mermaid\ngraph TD;\nA-->B;\n```).
-                    """},
-                    {"role": "user", "content":prompt}
-                ]
-            )
+                     For diagrams and graphs, use Mermaid syntax inside a 'mermaid' code block 
+                     (e.g., ```mermaid\ngraph TD;\nA-->B;\n```).
+                    """
+            
+            # First try Gemini
+            try:
+                request = gemmini_client.chat.completions.create(
+                    model="gemini-2.5-flash-preview-05-20",
+                    stream=True,
+                    messages=[
+                        {"role":"system", "content": system_prompt},
+                        {"role": "user", "content": prompt}
+                    ]
+                )
+            except Exception as e:
+                error_messages.append(f"Gemini failed: {e}")
+            
+            # If Gemini failed, try OpenAI
+            if request is None:
+                try:
+                    request = openai_client.chat.completions.create(
+                        model="gpt-4o",
+                        stream=True,
+                        messages=[
+                            {"role":"system", "content": system_prompt},
+                            {"role": "user", "content": prompt}
+                        ]
+                    )
+                except Exception as e:
+                    error_messages.append(f"OpenAI failed: {e}")
+            
+            # If OpenAI failed, try Groq
+            if request is None:
+                try:
+                    request = groq_client.chat.completions.create(
+                        model="llama3-70b-8192",
+                        stream=True,
+                        messages=[
+                            {"role":"system", "content": system_prompt},
+                            {"role": "user", "content": prompt}
+                        ]
+                    )
+                except Exception as e:
+                    error_messages.append(f"Groq failed: {e}")
+            
+            # If Groq failed, try DeepSeek
+            if request is None:
+                try:
+                    request = deepseek_client.chat.completions.create(
+                        model="deepseek-chat",
+                        stream=True,
+                        messages=[
+                            {"role":"system", "content": system_prompt},
+                            {"role": "user", "content": prompt}
+                        ]
+                    )
+                except Exception as e:
+                    error_messages.append(f"DeepSeek failed: {e}")
+            
+            # If all failed, return an error
+            if request is None:
+                await self.write_message(json.dumps({
+                    "error": f"All providers failed: {' | '.join(error_messages)}"
+                }))
+                return
 
             for chunk in request:
                 print(chunk)
@@ -428,19 +531,32 @@ class DocumentLibraryHandler(BaseCORSHandler):
             query_params = parse_qs(query)
             search_term = query_params.get('search', [''])[0]  # Default to empty string if no search term
 
-            # List all files in the UPLOAD_DIR
-            all_files = glob.glob(os.path.join(UPLOAD_DIR, '*.*'))  # Match any file extension
-
-            # Filter files based on the search term (if provided)
+            document_list = []
+            
+            # If search term provided, use vector search for semantic search
             if search_term:
                 search_term_lower = search_term.lower()
-                filtered_files = [f for f in all_files if os.path.basename(f).lower().find(search_term_lower) != -1]
+                # Use FAISS vector database for semantic search
+                vector_results = memory.search_memory(search_term_lower, k=5)
+                
+                # Extract document information from search results
+                if vector_results:
+                    for result in vector_results:
+                        meta = result.get('metadata', {})
+                        doc_name = meta.get('doc_name', '')
+                        if doc_name:  # Only include results with a valid document name
+                            document_list.append({
+                                'name': doc_name,
+                                'url': meta.get('doc_url', '#'),
+                                'relevance': str(result.get('distance', 1.0))
+                            })
+                            print(document_list)
             else:
-                filtered_files = all_files
-
-            # Format the file list for the response
-            document_list = [os.path.basename(f) for f in filtered_files]
-
+                # If no search term, get all documents from MongoDB
+                all_docs = list(libraryDocsCollection.find({}, {"_id": 0, "doc_name": 1, "doc_uuid": 1, "doc_url": 1}))
+                # Format the document list for the response
+                document_list = [{'name': doc['doc_name'], 'url': doc['doc_url']} 
+                                for doc in all_docs]
             self.set_header("Content-Type", "application/json")
             self.write(json.dumps(document_list))
 
@@ -517,25 +633,25 @@ class AgenticSearchWebSocketHandler(tornado.websocket.WebSocketHandler):
             links_for_llm = "\n".join([f"- {l}" for l in web_links])
             synthesis_prompt = f"""You are an expert research assistant. Your goal is to provide a comprehensive and well-structured answer to the user's query, synthesizing information from both an internal document library and external web search results.
 
-User Query: "{query}"
+                User Query: "{query}"
 
-Here is the information I have gathered:
+                Here is the information I have gathered:
 
----
-INTERNAL LIBRARY RESULTS:
-{json.dumps(vector_payload, indent=2)}
----
-WEB SEARCH RESULTS (content and sources):
-{web_search_content}
+                ---
+                INTERNAL LIBRARY RESULTS:
+                {json.dumps(vector_payload, indent=2)}
+                ---
+                WEB SEARCH RESULTS (content and sources):
+                {web_search_content}
 
-Relevant Web Source Links:
-{links_for_llm}
----
+                Relevant Web Source Links:
+                {links_for_llm}
+                ---
 
-Please provide a synthesized answer that integrates information from these sources. Where possible, cite the web sources using markdown links. Structure your answer clearly using Markdown (headings, lists, etc.).
-For mathematical formulas, use KaTeX syntax (e.g., $$...$$ for block and $...$ for inline).
-For diagrams and graphs, use Mermaid syntax inside a 'mermaid' code block (e.g., ```mermaid\ngraph TD;\nA-->B;\n```).
-"""
+                Please provide a synthesized answer that integrates information from these sources. Where possible, cite the web sources using markdown links. Structure your answer clearly using Markdown (headings, lists, etc.).
+                For mathematical formulas, use KaTeX syntax (e.g., $$...$$ for block and $...$ for inline).
+                For diagrams and graphs, use Mermaid syntax inside a 'mermaid' code block (e.g., ```mermaid\ngraph TD;\nA-->B;\n```).
+            """
             
             # Stream the final response
             final_response_stream = openai_client.chat.completions.create(
@@ -556,6 +672,155 @@ For diagrams and graphs, use Mermaid syntax inside a 'mermaid' code block (e.g.,
             logging.error(f"Agentic search error: {e}", exc_info=True)
             await self.write_message(json.dumps({"error": f"An error occurred: {e}"}))
 
+class UserDocumentsHandler(BaseCORSHandler):
+    def get(self):
+        # Get token from Authorization header
+        auth_header = self.request.headers.get("Authorization", "")
+        print(f"Authorization header: {auth_header}")
+        token = auth_header.replace("Bearer ", "") if auth_header.startswith("Bearer ") else ""
+        
+        if not token:
+            self.set_status(401)
+            self.write({"message": "Authentication required"})
+            return
+        
+        # Debug: Check all sessions in database
+        all_sessions = list(sessionsCollection.find({}, {"token": 1, "user_id": 1, "_id": 0}))
+        print(f"Total sessions in DB: {len(all_sessions)}")
+        if len(all_sessions) > 0:
+            print(f"Sample session: {all_sessions[0]}")
+        
+        # Find session in MongoDB
+        session = sessionsCollection.find_one({"token": token})
+        if session is None:
+            print(f"No session found with token: {token[:10]}...")
+            self.set_status(401)
+            self.write({"message": "Invalid token"})
+            return
+        
+        # Get user email from session
+        user_email = session.get("user_id")
+        print(f"Found session for user: {user_email}")
+        
+        # Query documents associated with this user
+        documents = list(userDocumentsCollection.find({"user_email": user_email}, 
+                                                   {"_id": 0, "filename": 1, "upload_date": 1}))
+        
+        # Return documents array
+        self.write(json.dumps(documents))
+
+class UserDocumentUploadHandler(BaseCORSHandler):
+    def post(self):
+        # Get token from Authorization header
+        auth_header = self.request.headers.get("Authorization", "")
+        token = auth_header.replace("Bearer ", "") if auth_header.startswith("Bearer ") else ""
+        
+        if not token:
+            self.set_status(401)
+            self.write({"message": "Authentication required"})
+            return
+        
+        # Find session in MongoDB
+        session = sessionsCollection.find_one({"token": token})
+        if not session:
+            self.set_status(401)
+            self.write({"message": "Invalid token"})
+            return
+            
+        # Get user email from session
+        user_email = session.get("user_id")
+        
+        if not self.request.files or "file" not in self.request.files:
+            self.set_status(400)
+            self.write({"message": "No file provided"})
+            return
+            
+        fileinfo = self.request.files["file"][0]
+        original_filename = fileinfo["filename"]
+        
+        # Generate unique filename to avoid collisions
+        extension = os.path.splitext(original_filename)[1]
+        unique_filename = f"{user_email.split('@')[0]}_{secrets.token_hex(4)}{extension}"
+        
+        # Define user uploads directory - create separate directory for user files
+        upload_dir = os.path.join(os.path.dirname(__file__), "user_uploads")
+        os.makedirs(upload_dir, exist_ok=True)
+        
+        # Write file to disk
+        file_path = os.path.join(upload_dir, unique_filename)
+        with open(file_path, "wb") as f:
+            f.write(fileinfo["body"])
+            
+        # Store file metadata in MongoDB
+        userDocumentsCollection.insert_one({
+            "user_email": user_email,
+            "original_filename": original_filename,
+            "filename": unique_filename,
+            "upload_date": datetime.now().isoformat(),
+            "file_size": len(fileinfo["body"])
+        })
+        
+        self.write({
+            "message": "File uploaded successfully",
+            "filename": unique_filename
+        })
+
+class ViewDocumentHandler(BaseCORSHandler):
+    def get(self):
+        doc_url = self.get_argument('docUrl', '')
+        title = self.get_argument('title', '')
+        
+        if not doc_url:
+            self.set_status(400)
+            self.write({"error": "Document URL parameter is required"})
+            return
+            
+        try:
+            # Decode URL if it's URL-encoded
+            doc_url = unquote(doc_url)
+            
+            # Check if the URL is relative (starts with /)
+            if doc_url.startswith('/'):
+                # This is a local file, serve it directly from the filesystem
+                file_path = os.path.join(os.path.dirname(__file__), doc_url.lstrip('/'))
+                
+                if not os.path.exists(file_path):
+                    self.set_status(404)
+                    self.write({"error": f"File not found: {doc_url}"})
+                    return
+                
+                # Determine content type based on file extension
+                content_type = "application/octet-stream"  # Default
+                if doc_url.endswith('.pdf'):
+                    content_type = 'application/pdf'
+                elif doc_url.endswith('.docx'):
+                    content_type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                elif doc_url.endswith('.txt'):
+                    content_type = 'text/plain'
+                
+                # Read and serve the file
+                with open(file_path, 'rb') as f:
+                    content = f.read()
+                
+                self.set_header("Content-Type", content_type)
+                self.set_header("Content-Disposition", f"attachment; filename={os.path.basename(file_path)}")
+                self.write(content)
+            else:
+                # It's an external URL, fetch it
+                response = requests.get(doc_url, timeout=10)
+                if response.ok:
+                    content_type = response.headers.get('Content-Type', 'application/octet-stream')
+                    self.set_header("Content-Type", content_type)
+                    self.set_header("Content-Disposition", f"attachment; filename={os.path.basename(doc_url) or 'document'}")
+                    self.write(response.content)
+                else:
+                    self.set_status(response.status_code)
+                    self.write({"error": f"Failed to fetch document: {response.reason}"})
+            
+        except Exception as e:
+            self.set_status(500)
+            self.write({"error": f"Error processing document request: {str(e)}"})
+
 class Application(Application): # type: ignore
     def __init__(self):
         handlers = [
@@ -568,28 +833,38 @@ class Application(Application): # type: ignore
             (r"/api/documents", DocumentLibraryHandler),
             (r"/api/uploads/(.*)", StaticFileHandler, {'path': UPLOAD_DIR}),
             (r"/api/upload-drive-document", UploadDriveDocumentHandler),
-            (r"/api/auth/signin", SignInHandler),
-            (r"/api/auth/signup", SignUpHandler),
-            (r"/api/auth/google/login", GoogleOAuth2LoginHandler),
-            (r"/api/auth/facebook/login", FacebookOAuthHandler),
-            (r"/api/auth/check", AuthCheckHandler),
-            (r"/api/auth/logout", LogoutHandler),
-            (r"/api/auth/profile", UserProfileHandler),
-            (r"/api/auth/update-profile", UpdateProfileHandler),
-            (r"/api/auth/delete-account", DeleteAccountHandler),
-            (r"/api/auth/reset-password", ResetPasswordHandler),
-            (r"/api/auth/change-password", ChangePasswordHandler),
-            (r"/api/auth/oauth/logout", OAuthLogoutHandler),
-            (r"/api/auth/oauth/callback", OAuthCallbackHandler),
-            (r"/api/health", HealthCheckHandler),
-            (r".*", NotFoundHandler)
+            (r"/api/static/uploads/(.*)", StaticFileHandler, {'path': os.path.join(os.path.dirname(__file__), "static/uploads")}),
+            (r"/api/user-uploads/(.*)", StaticFileHandler, {'path': os.path.join(os.path.dirname(__file__), "user_uploads")}),
+            (r"/api/auth/signin", SignInHandler), # type: ignore
+            (r"/api/auth/signup", SignUpHandler), # type: ignore
+            (r"/api/auth/google/login", GoogleOAuth2LoginHandler), # type: ignore
+            (r"/api/auth/facebook/login", FacebookOAuthHandler), # type: ignore
+            (r"/api/auth/check", AuthCheckHandler), # type: ignore
+            (r"/api/auth/logout", LogoutHandler), # type: ignore
+            (r"/api/auth/profile", UserProfileHandler), # type: ignore
+            (r"/api/auth/update-profile", UpdateProfileHandler), # type: ignore
+            (r"/api/auth/delete-account", DeleteAccountHandler), # type: ignore
+            (r"/api/auth/reset-password", ResetPasswordHandler), # type: ignore
+            (r"/api/auth/change-password", ChangePasswordHandler), # type: ignore
+            (r"/api/auth/oauth/logout", OAuthLogoutHandler), # type: ignore
+            (r"/api/auth/oauth/callback", OAuthCallbackHandler), # type: ignore
+            (r"/api/health", HealthCheckHandler), # type: ignore
+            (r"/api/user-documents", UserDocumentsHandler),
+            (r"/api/upload-user-document", UserDocumentUploadHandler),
+            (r"/api/view-document", ViewDocumentHandler),
+            (r".*", NotFoundHandler) # type: ignore
         ]
         settings = {
             "debug": True,   # reload on change, more verbose errors
             "autoreload": True,
+            "google_redirect_base_uri": 'https://legalaiafrica.com/google_oauth',
+            "facebook_redirect_base_uri": 'https://legalaiafrica.com/facebook_oauth',
+            "google_oauth": {"key": os.getenv("GOOGLE_OAUTH_KEY"), "secret": os.getenv("GOOGLE_OAUTH_SECRET")},
+            "facebook_secret": os.getenv("FACEBOOK_SECRET"),
+            "facebook_api_key": os.getenv("FACEBOOK_API_KEY"),
+            "cookie_secret": os.getenv("COOKIE_SECRET", "default_secret_key"),
         }
         super().__init__(handlers, **settings)  # type: ignore
-
 
 def run_server(port: int = 4040):
     app = Application()

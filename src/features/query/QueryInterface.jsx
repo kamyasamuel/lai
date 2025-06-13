@@ -4,6 +4,7 @@ import LoadingIndicator from '../../components/LoadingIndicator';
 import { Search } from 'lucide-react';
 import MarkdownRenderer from '../../components/MarkdownRenderer';
 import { useQueryHistory } from './useQueryHistory';
+import API_BASE_URL from '../../config';
 
 const useCases = {
   'Laws & Regulations': [
@@ -92,13 +93,19 @@ export default function QueryInterface({ title }) {
                 </span>
               )}
             </h4>
-                    <div className="text-sm text-gray-300 mb-2">
-                      <MarkdownRenderer content={r.snippet} />
-                    </div>
-                    {r.link && r.link !== '#' && (
-                      <a href={r.link} target="_blank" rel="noopener noreferrer"
-                         className="text-sm text-orange-400 underline">
-                View Source
+            <div className="text-sm text-gray-300 mb-2">
+              <MarkdownRenderer content={r.snippet} />
+            </div>
+            {r.link && r.link !== '#' && (
+              <a href={`${API_BASE_URL}/view-document?docUrl=${encodeURIComponent(r.link)}&title=${encodeURIComponent(r.title || '')}`} 
+                 download={r.title || "document"}
+                 className="inline-flex items-center text-sm px-2 py-1 bg-[#222] hover:bg-[#333] rounded text-orange-400 transition-colors">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                  <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                  <polyline points="7 10 12 15 17 10"></polyline>
+                  <line x1="12" y1="15" x2="12" y2="3"></line>
+                </svg>
+                Download
               </a>
             )}
           </div>
@@ -120,18 +127,32 @@ export default function QueryInterface({ title }) {
         <div className="mb-4">
             {results.length > 0 ? (
                 <>
-                    <h3 className="text-lg font-semibold mb-3">Search History</h3>
-                    <div className="flex flex-wrap gap-2">
-                        {[...results].reverse().map((entry, i) => (
-                            <button
-                                key={i}
-                                onClick={() => handleSearch(entry.query)}
-                                className="bg-[#2c2c2c] hover:bg-[#3a3a3a] px-3 py-1 rounded-full text-sm"
-                            >
-                                {entry.query}
-                            </button>
-                        ))}
-                    </div>
+                    <div className="flex justify-between items-center mb-3">
+                <h3 className="text-lg font-semibold">Search History</h3>
+                <button
+                    onClick={() => setResults([])}
+                    className="text-xs text-orange-400 hover:text-orange-300 transition-colors flex items-center"
+                    aria-label="Clear search history"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                        <path d="M3 6h18"></path>
+                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                    </svg>
+                    Clear History
+                </button>
+            </div>
+            <div className="flex flex-wrap gap-2">
+                {[...results].reverse().map((entry, i) => (
+                    <button
+                        key={i}
+                        onClick={() => handleSearch(entry.query)}
+                        className="bg-[#2c2c2c] hover:bg-[#3a3a3a] px-3 py-1 rounded-full text-sm"
+                    >
+                        {entry.query}
+                    </button>
+                ))}
+            </div>
                 </>
             ) : (
                 <div className="text-center">

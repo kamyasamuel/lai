@@ -18,10 +18,8 @@ function DocumentLibraryInterface() {
     setError(null);
     try {
       const docs = await fetchDocumentsAPI(search);
-      // Assuming the API returns a flat list of filenames.
-      // To create a folder structure, we might need a more complex API response.
-      // For now, we'll just display them as files.
-      setDocuments(docs.map(doc => ({ name: doc, type: 'file' })));
+      // The API now returns objects with name and url properties
+      setDocuments(docs);
     } catch (e) {
       setError(e.message || 'Failed to fetch documents.');
       console.error(e);
@@ -70,6 +68,7 @@ function DocumentLibraryInterface() {
 
         {!loading && !error && (
           <div>
+            {/* The documents will need categorizing for better display */}
             {/* Folders Section - for the "Google Drive" feel }
             <div className="mb-8">
               <h2 className="text-xl font-semibold mb-4 text-gray-300">Folders</h2>
@@ -88,11 +87,11 @@ function DocumentLibraryInterface() {
 
             {/* Files Section */}
             <div>
-              <h2 className="text-xl font-semibold mb-4 text-gray-300">Files</h2>
+              <h2 className="text-xl font-semibold mb-3 text-gray-300">Files</h2>
               <div className="bg-[#1a1a1a] rounded-lg border border-[#333]">
                 <ul className="divide-y divide-[#333]">
                   {/* Header */}
-                  <li className="flex items-center justify-between p-4 text-sm font-medium text-gray-400">
+                  <li className="flex items-center justify-between py-2 px-3 text-sm font-medium text-gray-400">
                     <div className="w-2/5">Name</div>
                     <div className="w-1/5 text-center"></div>
                     <div className="w-1/5 text-center"></div>
@@ -101,31 +100,31 @@ function DocumentLibraryInterface() {
 
                   {documents.length > 0 ? (
                     documents.map((doc, index) => (
-                      <li key={index} className="flex items-center justify-between p-4 hover:bg-[#222] transition-colors">
-                        <div className="flex items-center gap-4 w-2/5">
-                          <FileText size={20} className="text-gray-400" />
+                      <li key={index} className="flex items-center justify-between py-2 px-3 hover:bg-[#222] transition-colors">
+                        <div className="flex items-center gap-2 w-2/5">
+                          <FileText size={18} className="text-gray-400 flex-shrink-0" />
                           <span className="font-medium truncate">{doc.name}</span>
                         </div>
                         <div className="w-1/5 text-center text-gray-500"></div>
                         <div className="w-1/5 text-center text-gray-500"></div>
-                        <div className="w-1/5 flex justify-end items-center gap-2">
+                        <div className="w-1/5 flex justify-end items-center gap-1">
                            <a
-                            href={`${API_BASE_URL}/uploads/${doc.name}`}
+                            href={doc.url}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="flex items-center p-2 text-sm bg-[#333] hover:bg-orange-600 rounded-md"
+                            className="flex items-center p-1.5 text-sm bg-[#333] hover:bg-orange-600 rounded-md"
                             download
                           >
-                            <Download size={16} />
+                            <Download size={14} />
                           </a>
-                          <button className="p-2 text-sm bg-[#333] hover:bg-orange-600 rounded-md">
-                            <MoreVertical size={16} />
+                          <button className="p-1.5 text-sm bg-[#333] hover:bg-orange-600 rounded-md">
+                            <MoreVertical size={14} />
                           </button>
                         </div>
                       </li>
                     ))
                   ) : (
-                    <li className="text-center text-gray-500 py-10">
+                    <li className="text-center text-gray-500 py-8">
                       <p>No documents found.</p>
                       {debouncedSearchTerm && <p>Try adjusting your search.</p>}
                     </li>

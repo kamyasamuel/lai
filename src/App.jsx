@@ -1,18 +1,18 @@
-import React, { useState } from 'react'
+import React, { useState, lazy, Suspense } from 'react'
 import Sidebar from './components/Sidebar'
 import LandingPage from './features/landing/LandingPage'
 import ChatInterface from './features/chat/ChatInterface'
 import DraftingInterface from './features/drafting/DraftingInterface'
-import FileAnalysisInterface from './features/fileanalysis/FileAnalysisInterface' // Corrected import path
-//import FileUploaderTool from './features/fileUploader/FileUploaderTool'
-import QueryInterface from './features/query/QueryInterface'
-import MyDriveInterface from './features/myDrive/MyDriveInterface'
-import ContractAnalysisInterface from './features/contractAnalysis/ContractAnalysisInterface'
-import DocumentComparisonInterface from './features/documentComparison/DocumentComparisonInterface'
-import DocumentLibraryInterface from './features/documentLibrary/DocumentLibraryInterface'
-import AgenticSearchInterface from './features/agenticSearch/AgenticSearchInterface'
-import { menuStructure } from './constants/menuStructure'
+import LoadingIndicator from './components/LoadingIndicator'
 
+// Lazy load large components
+const FileAnalysisInterface = lazy(() => import('./features/fileanalysis/FileAnalysisInterface'))
+const MyDriveInterface = lazy(() => import('./features/myDrive/MyDriveInterface'))
+const DocumentLibraryInterface = lazy(() => import('./features/documentLibrary/DocumentLibraryInterface'))
+const DocumentComparisonInterface = lazy(() => import('./features/documentComparison/DocumentComparisonInterface'))
+const ContractAnalysisInterface = lazy(() => import('./features/contractAnalysis/ContractAnalysisInterface'))
+const AgenticSearchInterface = lazy(() => import('./features/agenticSearch/AgenticSearchInterface'))
+const QueryInterface = lazy(() => import('./features/query/QueryInterface'))
 
 export default function App() {
   const [activeFeature, setActiveFeature] = useState(null)
@@ -25,24 +25,55 @@ export default function App() {
       case 'Drafting':
         return <DraftingInterface />
       case 'File Analysis':
-        return <FileAnalysisInterface />
+        return (
+          <Suspense fallback={<LoadingIndicator text="Loading File Analysis..." />}>
+            <FileAnalysisInterface />
+          </Suspense>
+        )
       case 'File Summariser':
-        // Use FileAnalysisInterface for summarization as it connects to the /analyze endpoint
-        return <FileAnalysisInterface />
+        return (
+          <Suspense fallback={<LoadingIndicator text="Loading File Summariser..." />}>
+            <FileAnalysisInterface />
+          </Suspense>
+        )
       case 'Contract Analysis':
-        return <ContractAnalysisInterface />
+        return (
+          <Suspense fallback={<LoadingIndicator text="Loading Contract Analysis..." />}>
+            <ContractAnalysisInterface />
+          </Suspense>
+        )
       case 'Document Comparison':
-        return <DocumentComparisonInterface /> // Changed to new component
+        return (
+          <Suspense fallback={<LoadingIndicator text="Loading Document Comparison..." />}>
+            <DocumentComparisonInterface />
+          </Suspense>
+        )
       case 'Document Library':
-          return <DocumentLibraryInterface />
+        return (
+          <Suspense fallback={<LoadingIndicator text="Loading Document Library..." />}>
+            <DocumentLibraryInterface />
+          </Suspense>
+        )
       case 'Agentic Search':
-          return <AgenticSearchInterface />
+        return (
+          <Suspense fallback={<LoadingIndicator text="Loading Agentic Search..." />}>
+            <AgenticSearchInterface />
+          </Suspense>
+        )
       case 'Contract Search':
       case 'Laws & Regulations':
       case 'Case Law':
-        return <QueryInterface title={activeFeature} />
+        return (
+          <Suspense fallback={<LoadingIndicator text={`Loading ${activeFeature}...`} />}>
+            <QueryInterface title={activeFeature} />
+          </Suspense>
+        )
       case 'My Drive':
-        return <MyDriveInterface />
+        return (
+          <Suspense fallback={<LoadingIndicator text="Loading My Drive..." />}>
+            <MyDriveInterface />
+          </Suspense>
+        )
       default:
         return <LandingPage onSelect={setActiveFeature} />
     }

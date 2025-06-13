@@ -8,15 +8,17 @@ import tornado
 from tornado.web import RequestHandler, HTTPError
 import tornado.auth
 from main import BaseCORSHandler # type: ignore
-# In a real app, use a database. This is just for demonstration.
-users = {}
-sessions = {}
+from mongo_db import usersCollection, googleOAuthCollection, facebookOAuthCollection, samala_db
 
-# Create OAuth instance and register providers
+# Create a MongoDB collection for sessions
+sessionsCollection = samala_db.sessionsCollection
+
+# Create an index on the token field for faster lookups
+sessionsCollection.create_index("token", unique=True)
+# Create an index on expiration for cleanup operations
+sessionsCollection.create_index("expires_at")
 
 default_host = "http://localhost:4040" if os.getenv("ENV") == "DEV" else "https://lawyers.legalaiafrica.com"
-
-# Configure OAuth providers as before
 
 class SignInHandler(BaseCORSHandler):
     def post(self):
@@ -35,17 +37,18 @@ class SignInHandler(BaseCORSHandler):
             self.write({"message": "Email and password are required"})
             return
 
-        # Check if user exists
-        if email not in users:
+        # Check if user exists in MongoDB
+        user = usersCollection.find_one({"email": email})
+        
+        if not user:
             self.set_status(401)
             self.write({"message": "Invalid email or password"})
             return
 
-        user = users[email]
         # Hash the provided password and check
         hashed_password = hashlib.sha256(password.encode()).hexdigest()
         
-        if hashed_password != user["password"]:
+        if hashed_password != user.get("password"):
             self.set_status(401)
             self.write({"message": "Invalid email or password"})
             return
@@ -54,10 +57,13 @@ class SignInHandler(BaseCORSHandler):
         token = secrets.token_hex(32)
         expires_at = int((datetime.now() + timedelta(days=1)).timestamp() * 1000)  # 24 hours from now
         
-        sessions[token] = {
+        # Store session in MongoDB
+        sessionsCollection.insert_one({
+            "token": token,
             "user_id": email,
-            "expires_at": expires_at
-        }
+            "expires_at": expires_at,
+            "created_at": datetime.now().isoformat()
+        })
 
         self.write({
             "token": token,
@@ -65,6 +71,26 @@ class SignInHandler(BaseCORSHandler):
             "email": email,
             "name": user.get("name", "")
         })
+
+    # Add to SignInHandler, SignUpHandler, OAuth handlers after session creation
+    def create_session(self, user_id):
+        # Generate a secure token
+        token = secrets.token_hex(32)
+        
+        # Store in MongoDB with proper structure
+        session_data = {
+            "user_id": user_id,  # This should be the email address
+            "token": token,
+            "created_at": datetime.now().isoformat()
+        }
+        
+        # Log session creation for debugging
+        print(f"Creating session for user: {user_id} with token: {token[:10]}...")
+        
+        # Insert into MongoDB
+        sessionsCollection.insert_one(session_data)
+        
+        return token
 
 class SignUpHandler(BaseCORSHandler):
     def post(self):
@@ -83,8 +109,10 @@ class SignUpHandler(BaseCORSHandler):
             self.write({"message": "Email and password are required"})
             return
 
-        # Check if user exists
-        if email in users:
+        # Check if user exists in MongoDB
+        existing_user = usersCollection.find_one({"email": email})
+        
+        if existing_user:
             self.set_status(400)
             self.write({"message": "User already exists"})
             return
@@ -92,27 +120,57 @@ class SignUpHandler(BaseCORSHandler):
         # Hash password
         hashed_password = hashlib.sha256(password.encode()).hexdigest()
         
-        # Create user
-        users[email] = {
+        # Create user in MongoDB
+        user_data = {
             "email": email,
             "password": hashed_password,
-            "created_at": datetime.now().isoformat()
+            "created_at": datetime.now().isoformat(),
+            "provider": "email"
         }
-
+        
+        # Insert user into MongoDB collection
+        result = usersCollection.insert_one(user_data)
+        
         # Create session token with expiry
         token = secrets.token_hex(32)
         expires_at = int((datetime.now() + timedelta(days=1)).timestamp() * 1000)  # 24 hours from now
         
-        sessions[token] = {
+        # Store session in MongoDB
+        sessionsCollection.insert_one({
+            "token": token,
             "user_id": email,
-            "expires_at": expires_at
-        }
+            "expires_at": expires_at,
+            "created_at": datetime.now().isoformat()
+        })
 
         self.write({
             "token": token,
             "expiresAt": expires_at,  # Send expiry time to client
             "email": email
         })
+
+    def create_session(self, user_id):
+        # Generate a secure token
+        token = secrets.token_hex(32)
+        
+        # Set expiration time (24 hours from now)
+        expires_at = int((datetime.now() + timedelta(days=1)).timestamp() * 1000)
+        
+        # Store in MongoDB with proper structure
+        session_data = {
+            "user_id": user_id,  # This should be the email address
+            "token": token,
+            "expires_at": expires_at,  # Token expires after 24 hours
+            "created_at": datetime.now().isoformat()
+        }
+        
+        # Log session creation for debugging
+        print(f"Creating session for user: {user_id} with token: {token[:10]}...")
+        
+        # Insert into MongoDB
+        sessionsCollection.insert_one(session_data)
+        
+        return token
 
 class GoogleOAuth2LoginHandler(BaseCORSHandler, tornado.auth.GoogleOAuth2Mixin):
     async def get(self):
@@ -130,20 +188,40 @@ class GoogleOAuth2LoginHandler(BaseCORSHandler, tornado.auth.GoogleOAuth2Mixin):
             if not email:
                 self.redirect("/?error=email_required")
                 return
-            if email not in users:
-                users[email] = {
+                
+            # Check if user exists in MongoDB
+            existing_user = usersCollection.find_one({"email": email})
+            
+            if not existing_user:
+                # Create new user
+                user_data = {
                     "email": email,
                     "name": user.get("name", ""),
                     "created_at": datetime.now().isoformat(),
                     "provider": "google"
                 }
+                usersCollection.insert_one(user_data)
+                
+                # Store OAuth info separately if needed
+                googleOAuthCollection.insert_one({
+                    "email": email,
+                    "access_token": access.get("access_token"),
+                    "refresh_token": access.get("refresh_token"),
+                    "expires_at": access.get("expires_in"),
+                    "created_at": datetime.now().isoformat()
+                })
+                
             token = secrets.token_hex(32)
             expires_at = int((datetime.now() + timedelta(days=1)).timestamp() * 1000)  # 24 hours from now
             
-            sessions[token] = {
+            # Store session in MongoDB
+            sessionsCollection.insert_one({
+                "token": token,
                 "user_id": email,
-                "expires_at": expires_at
-            }
+                "expires_at": expires_at,
+                "created_at": datetime.now().isoformat()
+            })
+            
             self.redirect(f"/#/dashboard?token={token}")
         else:
             self.authorize_redirect(
@@ -153,6 +231,26 @@ class GoogleOAuth2LoginHandler(BaseCORSHandler, tornado.auth.GoogleOAuth2Mixin):
                 response_type='code',
                 extra_params={'approval_prompt': 'auto'}
             )
+
+    # Add to SignInHandler, SignUpHandler, OAuth handlers after session creation
+    def create_session(self, user_id):
+        # Generate a secure token
+        token = secrets.token_hex(32)
+        
+        # Store in MongoDB with proper structure
+        session_data = {
+            "user_id": user_id,  # This should be the email address
+            "token": token,
+            "created_at": datetime.now().isoformat()
+        }
+        
+        # Log session creation for debugging
+        print(f"Creating session for user: {user_id} with token: {token[:10]}...")
+        
+        # Insert into MongoDB
+        sessionsCollection.insert_one(session_data)
+        
+        return token
 
 class FacebookOAuthHandler(BaseCORSHandler, tornado.auth.FacebookGraphMixin):
     async def get(self):
@@ -172,20 +270,34 @@ class FacebookOAuthHandler(BaseCORSHandler, tornado.auth.FacebookGraphMixin):
             if not email:
                 self.redirect("/?error=email_required")
                 return
-            if email not in users:
-                users[email] = {
+            existing_user = usersCollection.find_one({"email": email})
+            if not existing_user:
+                usersCollection.insert_one({
                     "email": email,
                     "name": user.get("name", ""),
                     "created_at": datetime.now().isoformat(),
                     "provider": "facebook"
-                }
+                })
+                
+                # Store Facebook OAuth info
+                facebookOAuthCollection.insert_one({
+                    "email": email,
+                    "access_token": user.get("access_token"),
+                    "expires_at": user.get("expires_in"),
+                    "created_at": datetime.now().isoformat()
+                })
+                
             token = secrets.token_hex(32)
             expires_at = int((datetime.now() + timedelta(days=1)).timestamp() * 1000)  # 24 hours from now
             
-            sessions[token] = {
+            # Store session in MongoDB
+            sessionsCollection.insert_one({
+                "token": token,
                 "user_id": email,
-                "expires_at": expires_at
-            }
+                "expires_at": expires_at,
+                "created_at": datetime.now().isoformat()
+            })
+            
             self.redirect(f"/#/dashboard?token={token}")
         else:
             self.authorize_redirect(
@@ -194,28 +306,57 @@ class FacebookOAuthHandler(BaseCORSHandler, tornado.auth.FacebookGraphMixin):
                 scope=["public_profile", "email"]
             )
 
+    # Add to SignInHandler, SignUpHandler, OAuth handlers after session creation
+    def create_session(self, user_id):
+        # Generate a secure token
+        token = secrets.token_hex(32)
+        
+        # Store in MongoDB with proper structure
+        session_data = {
+            "user_id": user_id,  # This should be the email address
+            "token": token,
+            "created_at": datetime.now().isoformat()
+        }
+        
+        # Log session creation for debugging
+        print(f"Creating session for user: {user_id} with token: {token[:10]}...")
+        
+        # Insert into MongoDB
+        sessionsCollection.insert_one(session_data)
+        
+        return token
+
 class AuthCheckHandler(BaseCORSHandler):
     def get(self):
         auth_header = self.request.headers.get("Authorization", "")
         token = auth_header.replace("Bearer ", "") if auth_header.startswith("Bearer ") else ""
         
-        if not token or token not in sessions:
+        if not token:
             self.set_status(401)
             self.write({"authenticated": False})
             return
         
-        session = sessions[token]
+        # Find session in MongoDB
         current_time = int(datetime.now().timestamp() * 1000)
+        session = sessionsCollection.find_one({"token": token})
         
-        if current_time > session["expires_at"]:
-            # Session expired
-            del sessions[token]
+        if not session:
             self.set_status(401)
             self.write({"authenticated": False})
             return
         
-        user_id = session["user_id"]
-        user = users.get(user_id)
+        # Check if token has expired
+        if current_time > session.get("expires_at", 0):
+            # Session expired, remove it
+            sessionsCollection.delete_one({"token": token})
+            self.set_status(401)
+            self.write({"authenticated": False})
+            return
+        
+        user_id = session.get("user_id")
+        
+        # Get user from MongoDB
+        user = usersCollection.find_one({"email": user_id})
         
         if not user:
             self.set_status(404)
@@ -235,29 +376,51 @@ class LogoutHandler(BaseCORSHandler):
         auth_header = self.request.headers.get("Authorization", "")
         token = auth_header.replace("Bearer ", "") if auth_header.startswith("Bearer ") else ""
         
-        if not token or token not in sessions:
+        if not token:
             self.set_status(401)
             self.write({"message": "Not authenticated"})
             return
         
-        # Remove session
-        del sessions[token]
+        # Remove session from MongoDB
+        result = sessionsCollection.delete_one({"token": token})
+        
+        if result.deleted_count == 0:
+            self.set_status(401)
+            self.write({"message": "Invalid token"})
+            return
+            
         self.set_status(204)
         self.finish()
 
+# Update the remaining handlers that use session tokens
 class UserProfileHandler(BaseCORSHandler):
     def get(self):
         auth_header = self.request.headers.get("Authorization", "")
         token = auth_header.replace("Bearer ", "") if auth_header.startswith("Bearer ") else ""
         
-        if not token or token not in sessions:
+        if not token:
             self.set_status(401)
             self.write({"message": "Not authenticated"})
             return
         
-        session = sessions[token]
-        user_id = session["user_id"]
-        user = users.get(user_id)
+        # Find session in MongoDB
+        session = sessionsCollection.find_one({"token": token})
+        
+        if not session:
+            self.set_status(401)
+            self.write({"message": "Not authenticated"})
+            return
+        
+        # Check if token has expired
+        current_time = int(datetime.now().timestamp() * 1000)
+        if current_time > session.get("expires_at", 0):
+            sessionsCollection.delete_one({"token": token})
+            self.set_status(401)
+            self.write({"message": "Session expired"})
+            return
+            
+        user_id = session.get("user_id")
+        user = usersCollection.find_one({"email": user_id})
         
         if not user:
             self.set_status(404)
@@ -275,15 +438,28 @@ class UpdateProfileHandler(BaseCORSHandler):
         auth_header = self.request.headers.get("Authorization", "")
         token = auth_header.replace("Bearer ", "") if auth_header.startswith("Bearer ") else ""
         
-        if not token or token not in sessions:
+        if not token:
             self.set_status(401)
             self.write({"message": "Not authenticated"})
             return
-        
-        session = sessions[token]
+
+        session = sessionsCollection.find_one({"token": token})
+        if not session:
+            self.set_status(401)
+            self.write({"message": "Not authenticated"})
+            return
+
+        # Check if token has expired
+        current_time = int(datetime.now().timestamp() * 1000)
+        if current_time > session.get("expires_at", 0):
+            sessionsCollection.delete_one({"token": token})
+            self.set_status(401)
+            self.write({"message": "Session expired"})
+            return
+
         user_id = session["user_id"]
-        user = users.get(user_id)
-        
+        user = usersCollection.find_one({"email": user_id})
+
         if not user:
             self.set_status(404)
             self.write({"message": "User not found"})
@@ -299,37 +475,77 @@ class UpdateProfileHandler(BaseCORSHandler):
         name = data.get("name")
         
         if name:
-            user["name"] = name
-        
-        users[user_id] = user  # Update user data
-        
-        self.write({
-            "email": user.get("email"),
-            "name": user.get("name", ""),
-            "created_at": user.get("created_at")
-        })
+            usersCollection.update_one({"email": user_id}, {"$set": {"name": name}})
+        if not token:
+            self.set_status(401)
+            self.write({"message": "Not authenticated"})
+            return
+
+        session = sessionsCollection.find_one({"token": token})
+        if not session:
+            self.set_status(401)
+            self.write({"message": "Not authenticated"})
+            return
+
+        # Check if token has expired
+        current_time = int(datetime.now().timestamp() * 1000)
+        if current_time > session.get("expires_at", 0):
+            sessionsCollection.delete_one({"token": token})
+            self.set_status(401)
+            self.write({"message": "Session expired"})
+            return
+
+        user_id = session["user_id"]
+
+        # Delete user from MongoDB
+        usersCollection.delete_one({"email": user_id})
+
+        # Remove session
+        sessionsCollection.delete_one({"token": token})
+
+        self.set_status(204)
+        self.finish()
 
 class DeleteAccountHandler(BaseCORSHandler):
     def post(self):
         auth_header = self.request.headers.get("Authorization", "")
         token = auth_header.replace("Bearer ", "") if auth_header.startswith("Bearer ") else ""
         
-        if not token or token not in sessions:
+        if not token:
             self.set_status(401)
             self.write({"message": "Not authenticated"})
             return
+
+        # Find session in MongoDB
+        session = sessionsCollection.find_one({"token": token})
+        if not session:
+            self.set_status(401)
+            self.write({"message": "Not authenticated"})
+            return
+
+        # Check if token has expired
+        current_time = int(datetime.now().timestamp() * 1000)
+        if current_time > session.get("expires_at", 0):
+            sessionsCollection.delete_one({"token": token})
+            self.set_status(401)
+            self.write({"message": "Session expired"})
+            return
+
+        user_id = session.get("user_id")
+
+        # Delete user from MongoDB
+        result = usersCollection.delete_one({"email": user_id})
         
-        session = sessions[token]
-        user_id = session["user_id"]
-        
-        if user_id in users:
-            del users[user_id]
-        
-        # Remove session
-        del sessions[token]
-        
-        self.set_status(204)
-        self.finish()
+        if result.deleted_count == 0:
+            self.set_status(404)
+            self.write({"message": "User not found or already deleted"})
+            return
+
+        # Remove all sessions for this user
+        sessionsCollection.delete_many({"user_id": user_id})
+
+        self.set_status(200)
+        self.write({"message": "Account deleted successfully"})
 
 class ResetPasswordHandler(BaseCORSHandler):
     def post(self):
@@ -343,21 +559,42 @@ class ResetPasswordHandler(BaseCORSHandler):
         email = data.get("email")
         new_password = data.get("new_password")
 
-        if not email or not new_password:
-            self.set_status(400)
-            self.write({"message": "Email and new password are required"})
+        auth_header = self.request.headers.get("Authorization", "")
+        token = auth_header.replace("Bearer ", "") if auth_header.startswith("Bearer ") else ""
+
+        if not token:
+            self.set_status(401)
+            self.write({"message": "Not authenticated"})
             return
 
-        if email not in users:
+        session = sessionsCollection.find_one({"token": token})
+        if not session:
+            self.set_status(401)
+            self.write({"message": "Not authenticated"})
+            return
+
+        # Check if token has expired
+        current_time = int(datetime.now().timestamp() * 1000)
+        if current_time > session.get("expires_at", 0):
+            sessionsCollection.delete_one({"token": token})
+            self.set_status(401)
+            self.write({"message": "Session expired"})
+            return
+
+        user_id = session["user_id"]
+
+        # Get user from MongoDB
+        user = usersCollection.find_one({"email": user_id})
+
+        if not user:
             self.set_status(404)
             self.write({"message": "User not found"})
             return
-
+        
         # Hash the new password
         hashed_password = hashlib.sha256(new_password.encode()).hexdigest()
-        
-        # Update user password
-        users[email]["password"] = hashed_password
+        # Update user password in MongoDB
+        usersCollection.update_one({"email": email}, {"$set": {"password": hashed_password}})
         
         self.write({"message": "Password reset successfully"})
 
@@ -366,19 +603,34 @@ class ChangePasswordHandler(BaseCORSHandler):
         auth_header = self.request.headers.get("Authorization", "")
         token = auth_header.replace("Bearer ", "") if auth_header.startswith("Bearer ") else ""
         
-        if not token or token not in sessions:
+        if not token:
             self.set_status(401)
             self.write({"message": "Not authenticated"})
             return
-        
-        session = sessions[token]
+
+        session = sessionsCollection.find_one({"token": token})
+        if not session:
+            self.set_status(401)
+            self.write({"message": "Not authenticated"})
+            return
+
+        # Check if token has expired
+        current_time = int(datetime.now().timestamp() * 1000)
+        if current_time > session.get("expires_at", 0):
+            sessionsCollection.delete_one({"token": token})
+            self.set_status(401)
+            self.write({"message": "Session expired"})
+            return
+
         user_id = session["user_id"]
-        
-        if user_id not in users:
+
+        # Get user from MongoDB
+        user = usersCollection.find_one({"email": user_id})
+        if not user:
             self.set_status(404)
             self.write({"message": "User not found"})
             return
-        
+
         try:
             data = json.loads(self.request.body)
         except json.JSONDecodeError:
@@ -394,10 +646,9 @@ class ChangePasswordHandler(BaseCORSHandler):
             self.write({"message": "Old and new passwords are required"})
             return
 
-        user = users[user_id]
         hashed_old_password = hashlib.sha256(old_password.encode()).hexdigest()
         
-        if hashed_old_password != user["password"]:
+        if hashed_old_password != user.get("password"):
             self.set_status(401)
             self.write({"message": "Old password is incorrect"})
             return
@@ -405,23 +656,28 @@ class ChangePasswordHandler(BaseCORSHandler):
         # Hash the new password
         hashed_new_password = hashlib.sha256(new_password.encode()).hexdigest()
         
-        # Update user password
-        user["password"] = hashed_new_password
-        users[user_id] = user  # Update user data
+        # Update user password in MongoDB
+        usersCollection.update_one({"email": user_id}, {"$set": {"password": hashed_new_password}})
         
         self.write({"message": "Password changed successfully"})
+
 class OAuthLogoutHandler(BaseCORSHandler):
     def post(self):
         auth_header = self.request.headers.get("Authorization", "")
         token = auth_header.replace("Bearer ", "") if auth_header.startswith("Bearer ") else ""
         
-        if not token or token not in sessions:
+        if not token:
             self.set_status(401)
             self.write({"message": "Not authenticated"})
             return
-        
-        # Remove session
-        del sessions[token]
+
+        # Remove session from MongoDB
+        result = sessionsCollection.delete_one({"token": token})
+        if result.deleted_count == 0:
+            self.set_status(401)
+            self.write({"message": "Invalid token"})
+            return
+
         self.set_status(204)
         self.finish()
 

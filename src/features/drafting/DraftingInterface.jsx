@@ -2,12 +2,14 @@ import React, { useState } from 'react'
 import { draftAPI } from './draftingService'
 import LoadingIndicator from '../../components/LoadingIndicator'
 import MarkdownRenderer from '../../components/MarkdownRenderer'
+import { Copy, RefreshCw, FileText, Check } from 'lucide-react'
 
 export default function DraftingInterface() {
   const [input, setInput] = useState('')
   const [generated, setGenerated] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   const handleGenerate = async () => {
     if (!input.trim()) return
@@ -23,15 +25,28 @@ export default function DraftingInterface() {
     }
   }
 
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(generated)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000) // Reset after 2 seconds
+    } catch (err) {
+      console.error('Failed to copy text:', err)
+    }
+  }
+
   return (
     <div className="h-full text-white flex flex-col page-container-padding">
       {!submitted ? (
         // initial prompt UI
         <div className="flex-1 flex flex-col justify-center items-center text-center">
           <h2 className="text-xl mb-4">Generate a Legal Draft</h2>
-          <p className="text-gray-400 mb-6">
-            e.g., "Draft a lease agreement for residential property in Uganda."
-          </p>
+          <div className="flex items-center mb-6">
+            <FileText className="mr-2 text-[#fff]" />
+            <p className="text-gray-400">
+              e.g., "Draft a lease agreement for residential property in Uganda."
+            </p>
+          </div>
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -41,8 +56,9 @@ export default function DraftingInterface() {
           />
           <button
             onClick={handleGenerate}
-            className="custom-button px-6 py-2 rounded text-white"
+            className="border border-[--tw-bg-color]  border:hover-[#222] px-6 py-2 rounded text-white flex items-center"
           >
+            <FileText className="mr-2" size={18} />
             Generate
           </button>
         </div>
@@ -70,22 +86,18 @@ export default function DraftingInterface() {
             <button
               onClick={handleGenerate}
               disabled={loading}
-              className="custom-button px-4 rounded disabled:opacity-50"
+              className="border border-[--tw-bg-color] border:hover-[#222] px-4 py-2 rounded disabled:opacity-50 flex items-center"
             >
+              <RefreshCw size={18} className={`mr-2 ${loading ? 'animate-spin' : ''}`} />
               {loading ? 'Generating…' : 'Regenerate'}
             </button>
             <button
-              onClick={() => {
-                const blob = new Blob([generated], { type: 'text/plain' })
-                const a = document.createElement('a')
-                a.href = URL.createObjectURL(blob)
-                a.download = 'legal_draft.txt'
-                a.click()
-                URL.revokeObjectURL(a.href)
-              }}
-              className="custom-button px-4 py-2 rounded flex items-center gap-2"
+              onClick={handleCopy}
+              className="border border-[--tw-bg-color] border:hover-[#222] px-4 py-2 rounded flex items-center gap-2"
+              title="Copy to clipboard for pasting into a Word document"
             >
-              Download
+              {copied ? <Check size={18} className="mr-2" /> : <Copy size={18} className="mr-2" />}
+              {copied ? 'Copied!' : 'Copy'}
             </button>
           </div>
         </div>

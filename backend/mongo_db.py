@@ -50,6 +50,15 @@ googleOAuthCollection = samala_db.googleOAuthCollection
 facebookOAuthCollection = samala_db.facebookOAuthCollection
 XOAuthCollection = samala_db.XOAuthCollection
 libraryDocsCollection = samala_db.libraryDocsCollection #{'doc_name':"", 'doc_uuid':'', 'doc_url':f'/static/uploads/lib_docs/{doc_uuid}'}
+userDocumentsCollection = samala_db.userDocumentsCollection # {'user_email':email, 'filename':filename, 'upload_date':date, 'file_path':file_path}
+registrationsCollection = samala_db.registrationsCollection # {'registration':registration, 'details':{}}
+sessionsCollection = samala_db.sessionsCollection # {'token':token, 'user_id':email, 'created_at':date, 'expires_at':date}
+
+# analysisCollection = samala_db.analysisCollection # {"username":"", "docs":[{"file_path":"","file_name":""}]}
+# annualAccess = samala_db.annualAccess # {"username":username,"granted":False,}
+# registrationsCollection = samala_db.registrationsCollection # {'registration':registration, 'details':{}}
+# attorneyOnboarding = samala_db.attorneyOnboarding # {'username':username, 'details':{}}
+# subscriptionsCollection = samala_db.subscriptions # {'username':username, 'subscription_type':subscription_type, 'start_date':date, 'end_date':date}
 ### Structure
 # {
 #   "img-name": str
