@@ -906,8 +906,8 @@ class Application(Application): # type: ignore
         settings = {
             "debug": True,   # reload on change, more verbose errors
             "autoreload": True,
-            "google_redirect_base_uri": 'https://legalaiafrica.com/google_oauth',
-            "facebook_redirect_base_uri": 'https://legalaiafrica.com/facebook_oauth',
+            "google_redirect_base_uri": 'https://lawyers.legalaiafrica.com/api/auth/google/login',
+            "facebook_redirect_base_uri": 'https://lawyers.legalaiafrica.com/api/auth/facebook/login',
             "google_oauth": {"key": os.getenv("GOOGLE_OAUTH_KEY"), "secret": os.getenv("GOOGLE_OAUTH_SECRET")},
             "facebook_secret": os.getenv("FACEBOOK_SECRET"),
             "facebook_api_key": os.getenv("FACEBOOK_API_KEY"),
@@ -918,7 +918,6 @@ class Application(Application): # type: ignore
 def run_server(port: int = 4040):
     app = Application()
     app.listen(port)
-    print(f"[server] Listening on http://localhost:{port}")
     tornado.ioloop.IOLoop.current().start()
 
 def run_exec_mode(prompt: str):

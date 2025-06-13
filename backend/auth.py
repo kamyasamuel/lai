@@ -174,8 +174,9 @@ class SignUpHandler(BaseCORSHandler):
 
 class GoogleOAuth2LoginHandler(BaseCORSHandler, tornado.auth.GoogleOAuth2Mixin):
     async def get(self):
-        redirect_uri = self.application.settings.get('google_redirect_base_uri', default_host + "/auth/google/callback")
+        redirect_uri = self.application.settings.get('google_redirect_base_uri', default_host + "/api/auth/google/login")
         if self.get_argument('code', None):
+            # Get OAuth access token
             access = await self.get_authenticated_user(
                 redirect_uri=redirect_uri,
                 code=self.get_argument('code')
@@ -192,7 +193,7 @@ class GoogleOAuth2LoginHandler(BaseCORSHandler, tornado.auth.GoogleOAuth2Mixin):
             # Check if user exists in MongoDB
             existing_user = usersCollection.find_one({"email": email})
             
-            if not existing_user:
+            if existing_user is None:
                 # Create new user
                 user_data = {
                     "email": email,
@@ -222,8 +223,12 @@ class GoogleOAuth2LoginHandler(BaseCORSHandler, tornado.auth.GoogleOAuth2Mixin):
                 "created_at": datetime.now().isoformat()
             })
             
-            self.redirect(f"/#/dashboard?token={token}")
+            # Instead of redirecting to /#/dashboard with token in URL
+            # Redirect to frontend callback route with token as query parameter
+            frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173")
+            self.redirect(f"{frontend_url}/auth/callback?token={token}")
         else:
+            # Existing code to initiate OAuth flow
             self.authorize_redirect(
                 redirect_uri=redirect_uri,
                 client_id=self.settings.get("google_oauth", {}).get("key", os.getenv("GOOGLE_CLIENT_ID")),

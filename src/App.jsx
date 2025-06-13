@@ -1,9 +1,11 @@
 import React, { useState, lazy, Suspense } from 'react'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Sidebar from './components/Sidebar'
 import LandingPage from './features/landing/LandingPage'
 import ChatInterface from './features/chat/ChatInterface'
 import DraftingInterface from './features/drafting/DraftingInterface'
 import LoadingIndicator from './components/LoadingIndicator'
+import OAuthCallback from './auth/OAuthCallback';
 
 // Lazy load large components
 const FileAnalysisInterface = lazy(() => import('./features/fileanalysis/FileAnalysisInterface'))
@@ -80,14 +82,26 @@ export default function App() {
   }
 
   return (
-    <div className="flex h-screen bg-black text-white main-content">
-      <Sidebar
-        activeFeature={activeFeature}
-        setActiveFeature={setActiveFeature}
-        open={sidebarOpen}
-        toggle={() => setSidebarOpen(!sidebarOpen)}
-      />
-      <main className="flex-1 overflow-auto">{renderFeature()}</main>
-    </div>
+    <BrowserRouter>
+      <div className="flex h-screen bg-black text-white main-content">
+        <Sidebar
+          activeFeature={activeFeature}
+          setActiveFeature={setActiveFeature}
+          open={sidebarOpen}
+          toggle={() => setSidebarOpen(!sidebarOpen)}
+        />
+        <main className="flex-1 overflow-auto">{renderFeature()}</main>
+      </div>
+      <Routes>
+        {/* Existing routes */}
+        <Route path="/signin" element={<SignIn />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        
+        {/* OAuth callback route */}
+        <Route path="/auth/callback" element={<OAuthCallback />} />
+        
+        {/* Other routes */}
+      </Routes>
+    </BrowserRouter>
   )
 }
