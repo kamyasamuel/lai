@@ -6,6 +6,7 @@ import ChatInterface from './features/chat/ChatInterface'
 import DraftingInterface from './features/drafting/DraftingInterface'
 import LoadingIndicator from './components/LoadingIndicator'
 import OAuthCallback from './auth/OAuthCallback';
+import SignIn from './auth/SignIn';
 
 // Lazy load large components
 const FileAnalysisInterface = lazy(() => import('./features/fileanalysis/FileAnalysisInterface'))
@@ -95,7 +96,6 @@ export default function App() {
       <Routes>
         {/* Existing routes */}
         <Route path="/signin" element={<SignIn />} />
-        <Route path="/dashboard" element={<Dashboard />} />
         
         {/* OAuth callback route */}
         <Route path="/auth/callback" element={<OAuthCallback />} />
