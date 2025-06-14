@@ -58,7 +58,7 @@ export default function QueryInterface({ title }) {
           onChange={e=>setQuery(e.target.value)}
           onKeyDown={e=>e.key==='Enter'&&handleSearch()}
           className="flex-1 p-3 br-2 rounded-l bg-[#111] text-white border border-[#333]"
-          placeholder={`Search ${title.toLowerCase()}...`}
+          placeholder={`${title}...`}
         />
       <Search onClick={()=>handleSearch()} className='hover-cursor scale-1' />
     </div>

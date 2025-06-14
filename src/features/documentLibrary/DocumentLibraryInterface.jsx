@@ -44,7 +44,7 @@ function DocumentLibraryInterface() {
   ];
 
   return (
-    <div className="h-full flex flex-col text-white bg-[#0a0a0a] page-container-padding gap-6">
+    <div className="h-full w-full flex flex-col text-white bg-[#0a0a0a] page-container-padding gap-6">
       {/* Header and Search */}
       <div className="flex flex-col items-center w-full pt-8">
         <h1 className="text-3xl font-bold mb-2 text-center">Document Library</h1>
@@ -83,32 +83,31 @@ function DocumentLibraryInterface() {
                   </div>
                 ))}
               </div>
-            </div>**/}
-
-            {/* Files Section */}
+            </div>*/}
+           {/* Files Section */}
             <div>
               <h2 className="text-xl font-semibold mb-3 text-gray-300">Files</h2>
               <div className="bg-[#1a1a1a] rounded-lg border border-[#333]">
                 <ul className="divide-y divide-[#333]">
-                  {/* Header */}
-                  <li className="flex items-center justify-between py-2 px-3 text-sm font-medium text-gray-400">
-                    <div className="w-2/5">Name</div>
-                    <div className="w-1/5 text-center"></div>
-                    <div className="w-1/5 text-center"></div>
-                    <div className="w-1/5 text-right">Action</div>
+                  {/* Header - Hidden on small screens */}
+                  <li className="hidden md:flex items-center justify-between py-2 px-3 text-sm font-medium text-gray-400">
+                    <div className="w-1/2 md:w-2/5">Name</div>
+                    <div className="hidden md:block w-1/5 text-center"></div>
+                    <div className="hidden md:block w-1/5 text-center"></div>
+                    <div className="w-1/2 md:w-1/5 text-right">Action</div>
                   </li>
 
                   {documents.length > 0 ? (
                     documents.map((doc, index) => (
-                      <li key={index} className="flex items-center justify-between py-2 px-3 hover:bg-[#222] transition-colors">
-                        <div className="flex items-center gap-2 w-2/5">
+                      <li key={index} className="flex flex-col md:flex-row md:items-center md:justify-between py-2 px-3 hover:bg-[#222] transition-colors">
+                        <div className="flex items-center gap-2 w-full md:w-2/5 mb-2 md:mb-0">
                           <FileText size={18} className="text-gray-400 flex-shrink-0" />
                           <span className="font-medium truncate">{doc.name}</span>
                         </div>
-                        <div className="w-1/5 text-center text-gray-500"></div>
-                        <div className="w-1/5 text-center text-gray-500"></div>
-                        <div className="w-1/5 flex justify-end items-center gap-1">
-                           <a
+                        <div className="hidden md:block w-1/5 text-center text-gray-500"></div>
+                        <div className="hidden md:block w-1/5 text-center text-gray-500"></div>
+                        <div className="w-full md:w-1/5 flex justify-end items-center gap-1">
+                          <a
                             href={`${API_BASE_URL}${doc.url}`}
                             target="_blank"
                             rel="noopener noreferrer"

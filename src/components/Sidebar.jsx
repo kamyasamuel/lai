@@ -64,11 +64,10 @@ export default function Sidebar({
           <button
             onClick={() => setActiveFeature('Dashboard')}
             {...(!isAuthenticated && { disabled: true })}
-            className={`flex items-center w-full text-left p-1 rounded hover:bg-[#222] text-white ${
-              activeFeature === 'Dashboard' ? 'bg-[#222]' : ''
-            } ${!open ? 'justify-center' : 'justify-center'} ${
-              !isAuthenticated ? 'opacity-50 cursor-not-allowed' : ''
-            }`}
+            className={`flex items-center w-full text-left p-1 rounded hover:bg-[#222] text-white 
+              ${activeFeature === 'Dashboard' ? `bg-[#222] ${!open ? 'border border-[--tw-bg-color]' : ''}` : ''}
+              ${!open ? 'justify-center' : ''} 
+              ${!isAuthenticated ? 'opacity-50 cursor-not-allowed' : ''}`}
             title="Home"
           >
             <Home
@@ -101,13 +100,10 @@ export default function Sidebar({
                     <button
                       onClick={() => setActiveFeature(name)}
                       {...(!isAuthenticated && { disabled: true })}
-                      className={`flex items-center w-full text-left p-1 rounded hover:bg-[#222] text-white ${
-                        activeFeature === name ? 'bg-[#222]' : ''
-                      } ${!open ? 'justify-center' : 'justify-center'} ${
-                        !isAuthenticated
-                          ? 'opacity-50 cursor-not-allowed'
-                          : ''
-                      }`}
+                      className={`flex items-center w-full text-left p-1 rounded hover:bg-[#222] text-white 
+                        ${activeFeature === name ? `bg-[#222] ${!open ? 'border border-[--tw-bg-color]' : ''}` : ''}
+                        ${!open ? 'justify-center' : ''} 
+                        ${!isAuthenticated ? 'opacity-50 cursor-not-allowed' : ''}`}
                       title={name}
                     >
                       <Icon
